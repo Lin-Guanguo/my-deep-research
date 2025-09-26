@@ -1,0 +1,30 @@
+# Copy to config/settings.yaml and adjust for your environment.
+# Runtime defaults and API credentials now live in a single YAML file.
+# Keep actual secrets in the untracked root-level `secret` file (KEY=VALUE lines).
+
+runtime:
+  locale: zh-CN
+  max_iterations: 6
+  human_review: true
+
+models:
+  planner: gpt-4o-mini
+  researcher: gpt-4o-mini
+  reporter: gpt-4o-mini
+  temperature: 0.0
+
+search:
+  provider: tavily
+  max_queries: 3
+  timeout_seconds: 8.0
+
+api_keys:
+  openai: null
+  anthropic: null
+  moonshot: null
+  tavily: null
+  brave: null
+
+observability:
+  langsmith_project: deep-research-local
+  langsmith_api_key: null
