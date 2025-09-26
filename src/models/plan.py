@@ -5,6 +5,7 @@ from __future__ import annotations
 from enum import Enum
 from typing import List, Optional
 
+# Pydantic 提供字段校验与 JSON 序列化，便于 LangGraph 节点共享结构化计划状态。
 from pydantic import BaseModel, Field
 
 
@@ -69,13 +70,13 @@ class Plan(BaseModel):
         raise KeyError(f"Step {step_id} not found")
 
     def mark_step_status(self, step_id: str, status: StepStatus) -> None:
-        """Update the status of a step in-place."""
+        """Update the status of a step in-place for runtime progress tracking."""
 
         step = self.get_step(step_id)
         step.status = status
 
     def append_note(self, step_id: str, note: str, reference: Optional[str] = None) -> None:
-        """Attach a note (and optional reference) to a step."""
+        """Attach research notes (and optional citation) to a step during execution."""
 
         step = self.get_step(step_id)
         step.notes.append(note)
