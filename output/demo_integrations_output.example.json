@@ -1,6 +1,6 @@
 {
   "prompt": "用一句话总结 LangGraph 的核心特点。",
-  "llm_response": "LangGraph 的核心特点是通过图结构有效地表示和处理语言数据，促进自然语言处理任务的理解和推理。",
+  "llm_response": "LangGraph 的核心特点是通过图结构有效地表示和处理语言数据，促进自然语言处理任务的理解和执行。",
   "search_results": [
     {
       "title": "Building a Deep Research Agent with LangGraph - Sid Bharath",

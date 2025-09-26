@@ -8,7 +8,7 @@
 - 制定阶段性学习路线与资源清单，用于指导后续实践。
 - 初始化 `src/graph|config|tools|report|scripts` 目录，并放置基础占位模块与 CLI 入口。
 - 整合配置为单一 `config/settings.yaml`，支持根目录 `secret` 文件覆盖 OpenRouter/Tavily 密钥。
-- 实现 OpenRouter LLM 与 Tavily 搜索的最小集成，提供 `scripts/demo_integrations.py`（输出保存至 `output/`），并附带 `output/demo_output.example.json` 作为示例结果。
+- 实现 OpenRouter LLM 与 Tavily 搜索的最小集成，提供 `scripts/demo_integrations.py`，输出默认保存到 `output/demo_integrations_output.json` 并提供 `.example.json` 参考结果。
 
 ## 下一步
 - 选定首个调研主题并草拟报告模版示例，确保输出格式清晰。

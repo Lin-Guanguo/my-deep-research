@@ -18,6 +18,7 @@ from src.tools.search import SearchError, search_web
 
 OUTPUT_DIR = PROJECT_ROOT / "output"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+OUTPUT_FILENAME = "demo_integrations_output.json"
 
 
 def main() -> None:
@@ -66,7 +67,7 @@ def main() -> None:
         if result.get("snippet"):
             print("     ", result["snippet"])  # brief context
 
-    output_path = OUTPUT_DIR / "demo_output.json"
+    output_path = OUTPUT_DIR / OUTPUT_FILENAME
     output_payload = {
         "prompt": prompt,
         "llm_response": llm_response,
