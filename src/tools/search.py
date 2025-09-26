@@ -5,7 +5,11 @@ from __future__ import annotations
 import logging
 from typing import Any, Dict, List, Mapping, Sequence
 
+import httpx
+
 logger = logging.getLogger(__name__)
+
+_TAVILY_ENDPOINT = "https://api.tavily.com/search"
 
 
 class SearchError(RuntimeError):
@@ -20,11 +24,18 @@ def search_web(
     timeout: float = 10.0,
     params: Mapping[str, Any] | None = None,
 ) -> List[Dict[str, Any]]:
-    """Dispatch a search query to Tavily and return normalized results.
+    """Dispatch a search query to Tavily and return normalized results."""
 
-    Implementations should apply rate limiting and retries, then normalize the
-    payload into a list of {"title", "url", "snippet"} dicts.
-    """
+    if not tavily_key:
+        raise ValueError("Tavily API key is required")
+
+    payload: Dict[str, Any] = {
+        "api_key": tavily_key,
+        "query": query,
+        "max_results": max_results,
+    }
+    if params:
+        payload.update(params)
 
     logger.info(
         "Tavily search requested",
@@ -32,10 +43,22 @@ def search_web(
             "query": query,
             "max_results": max_results,
             "timeout": timeout,
-            "params": dict(params or {}),
         },
     )
-    raise NotImplementedError("Tavily integration not implemented")
+
+    try:
+        with httpx.Client(timeout=timeout) as client:
+            response = client.post(_TAVILY_ENDPOINT, json=payload)
+            response.raise_for_status()
+    except httpx.HTTPError as exc:
+        raise SearchError(f"Tavily request failed: {exc}") from exc
+
+    data = response.json()
+    raw_results = data.get("results")
+    if raw_results is None:
+        raise SearchError("Tavily response missing 'results' field")
+
+    return normalize_results(raw_results)
 
 
 def normalize_results(raw_results: Sequence[Mapping[str, Any]]) -> List[Dict[str, Any]]:

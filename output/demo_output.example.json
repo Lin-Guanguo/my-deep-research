@@ -1,0 +1,21 @@
+{
+  "prompt": "用一句话总结 LangGraph 的核心特点。",
+  "llm_response": "LangGraph 的核心特点是通过图结构有效地表示和处理语言数据，促进自然语言处理任务的理解和推理。",
+  "search_results": [
+    {
+      "title": "Building a Deep Research Agent with LangGraph - Sid Bharath",
+      "url": "https://www.siddharthbharath.com/build-deep-research-agent-langgraph/",
+      "snippet": ""
+    },
+    {
+      "title": "LangGraph - GPT Researcher",
+      "url": "https://docs.gptr.dev/docs/gpt-researcher/multi_agents/langgraph",
+      "snippet": ""
+    },
+    {
+      "title": "LangGraph 101: Let's Build A Deep Research Agent",
+      "url": "https://towardsdatascience.com/langgraph-101-lets-build-a-deep-research-agent/",
+      "snippet": ""
+    }
+  ]
+}
