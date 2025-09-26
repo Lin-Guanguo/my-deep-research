@@ -7,8 +7,8 @@
 - 通读 `Deep-Research-Project-Plan.md` 与 `DeerFlow-Tech-Stack.md`，梳理六周学习主线。
 - 制定阶段性学习路线与资源清单，用于指导后续实践。
 - 初始化 `src/graph|config|tools|report|scripts` 目录，并放置基础占位模块与 CLI 入口。
-- 整合配置为单一 `config/settings.yaml` 结构，提供 YAML+secret 文件加载逻辑。
-- 维护 `call_llm()/search_web()/fetch_article()` 等工具接口雏形，便于后续接入真实 API。
+- 整合配置为单一 `config/settings.yaml`，支持根目录 `secret` 文件覆盖 OpenRouter/Tavily 密钥。
+- 维护 `call_llm()/search_web()/fetch_article()` 等工具接口雏形，绑定 OpenRouter 与 Tavily 的调用约束。
 
 ## 下一步
 - 选定首个调研主题并草拟报告模版示例，确保输出格式清晰。

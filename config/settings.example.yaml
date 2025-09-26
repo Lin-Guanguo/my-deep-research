@@ -1,6 +1,6 @@
 # Copy to config/settings.yaml and adjust for your environment.
-# Runtime defaults and API credentials now live in a single YAML file.
-# Keep actual secrets in the untracked root-level `secret` file (KEY=VALUE lines).
+# Runtime defaults plus API credentials for the simplified stack
+# (OpenRouter for LLM, Tavily for search).
 
 runtime:
   locale: zh-CN
@@ -14,16 +14,12 @@ models:
   temperature: 0.0
 
 search:
-  provider: tavily
   max_queries: 3
   timeout_seconds: 8.0
 
-api_keys:
-  openai: null
-  anthropic: null
-  moonshot: null
-  tavily: null
-  brave: null
+api:
+  openrouter_key: null
+  tavily_key: null
 
 observability:
   langsmith_project: deep-research-local

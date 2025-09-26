@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Dict
 
@@ -23,7 +23,7 @@ class RuntimeConfig:
 
 @dataclass
 class ModelConfig:
-    """LLM model choices and sampling parameters."""
+    """LLM model choices and sampling parameters (served via OpenRouter)."""
 
     planner: str = "gpt-4o-mini"
     researcher: str = "gpt-4o-mini"
@@ -33,11 +33,18 @@ class ModelConfig:
 
 @dataclass
 class SearchConfig:
-    """Search provider and quota settings."""
+    """Tavily search quota settings."""
 
-    provider: str = "tavily"
     max_queries: int = 3
     timeout_seconds: float = 8.0
+
+
+@dataclass
+class ApiConfig:
+    """API credentials for OpenRouter and Tavily."""
+
+    openrouter_key: str | None = None
+    tavily_key: str | None = None
 
 
 @dataclass
@@ -55,7 +62,7 @@ class AppConfig:
     runtime: RuntimeConfig = field(default_factory=RuntimeConfig)
     models: ModelConfig = field(default_factory=ModelConfig)
     search: SearchConfig = field(default_factory=SearchConfig)
-    api_keys: Dict[str, str] = field(default_factory=dict)
+    api: ApiConfig = field(default_factory=ApiConfig)
     observability: ObservabilityConfig = field(default_factory=ObservabilityConfig)
 
 
@@ -63,11 +70,10 @@ def load_config(
     settings_path: str | Path = "config/settings.yaml",
     secret_path: str | Path = "secret",
 ) -> AppConfig:
-    """Load configuration from the single settings file and optional secret file.
+    """Load configuration from settings YAML and the optional secret file.
 
-    The `settings_path` YAML contains runtime defaults, while the plain-text
-    `secret` file (KEY=VALUE per line) can override sensitive API keys without
-    being committed.
+    `settings.yaml` carries defaults, while the plain-text `secret` file
+    (KEY=VALUE per line) overrides sensitive values without touching VCS.
     """
 
     settings_data = _load_settings_yaml(Path(settings_path))
@@ -76,21 +82,17 @@ def load_config(
     runtime_cfg = RuntimeConfig(**_get_section(settings_data, "runtime"))
     model_cfg = ModelConfig(**_get_section(settings_data, "models"))
     search_cfg = SearchConfig(**_get_section(settings_data, "search"))
+    api_cfg = ApiConfig(**_get_section(settings_data, "api"))
 
-    api_keys = dict(_get_section(settings_data, "api_keys"))
     observability_raw = _get_section(settings_data, "observability")
 
-    merged_api_keys, merged_observability = _merge_with_secrets(
-        api_keys, observability_raw, secrets_data
-    )
-
-    observability_cfg = ObservabilityConfig(**merged_observability)
+    api_cfg, observability_cfg = _merge_with_secrets(api_cfg, observability_raw, secrets_data)
 
     return AppConfig(
         runtime=runtime_cfg,
         models=model_cfg,
         search=search_cfg,
-        api_keys=merged_api_keys,
+        api=api_cfg,
         observability=observability_cfg,
     )
 
@@ -126,40 +128,32 @@ def _load_secret_file(path: Path) -> Dict[str, str]:
 
 
 def _merge_with_secrets(
-    api_keys: Dict[str, Any],
-    observability: Dict[str, Any],
+    api_cfg: ApiConfig,
+    observability_raw: Dict[str, Any],
     secrets: Dict[str, str],
-) -> tuple[Dict[str, str], Dict[str, Any]]:
-    merged_keys: Dict[str, str] = {
-        key: value
-        for key, value in api_keys.items()
-        if isinstance(value, str) and value
-    }
-    merged_observability = dict(observability)
+) -> tuple[ApiConfig, ObservabilityConfig]:
+    merged_api = ApiConfig(**asdict(api_cfg))
+    merged_observability = ObservabilityConfig(**observability_raw)
 
     for raw_key, raw_value in secrets.items():
         normalized = raw_key.strip().lower()
         value = raw_value.strip()
 
         if normalized.startswith("langsmith"):
-            if normalized.endswith("_project"):
-                merged_observability["langsmith_project"] = value
+            if normalized.endswith("project"):
+                merged_observability.langsmith_project = value
             else:
-                merged_observability["langsmith_api_key"] = value
+                merged_observability.langsmith_api_key = value
             continue
 
-        token = normalized
-        for suffix in ("_api_key", "_key", "_token"):
-            if token.endswith(suffix):
-                token = token[: -len(suffix)]
-                break
-        token = token.replace("-", "_")
-
-        if not token:
+        if "openrouter" in normalized or "open_router" in normalized:
+            merged_api.openrouter_key = value
             continue
-        merged_keys[token] = value
+        if "tavily" in normalized:
+            merged_api.tavily_key = value
+            continue
 
-    return merged_keys, merged_observability
+    return merged_api, merged_observability
 
 
 def _get_section(data: Dict[str, Any], key: str) -> Dict[str, Any]:
