@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
-import json
 import unittest
-from types import SimpleNamespace
 from unittest.mock import patch
 
 from src.models.plan import Plan
+from src.graph.state import GraphState
 
 
 class CliTests(unittest.TestCase):
@@ -38,11 +37,27 @@ class CliTests(unittest.TestCase):
             assumptions=[],
             risks=[],
         )
-        plan_payload = plan.model_dump()
+        plan_payload = plan
 
-        graph_stub = SimpleNamespace()
-        graph_stub.invoke = lambda state: {"plan": plan_payload, "metadata": {}}
-        mock_build_graph.return_value = graph_stub
+        captured_handler = {}
+
+        def fake_build_graph(cfg, *, planner_agent=None, review_handler=None):
+            captured_handler["handler"] = review_handler
+
+            class Stub:
+                def invoke(self, state):
+                    graph_state = GraphState(**state)
+                    graph_state.plan = plan_payload
+                    if review_handler:
+                        review_handler(graph_state)
+                    return {
+                        "plan": plan_payload.model_dump(),
+                        "metadata": {"last_review_action": "ACCEPT_PLAN"},
+                    }
+
+            return Stub()
+
+        mock_build_graph.side_effect = fake_build_graph
 
         from scripts import run_cli
 
@@ -51,6 +66,7 @@ class CliTests(unittest.TestCase):
         mock_display.assert_called_once()
         mock_summary.assert_called_once()
         mock_store.assert_not_called()
+        assert captured_handler["handler"] is not None
 
 
 if __name__ == "__main__":

@@ -37,15 +37,76 @@ class GraphBuilderTests(unittest.TestCase):
             risks=[],
         )
         dummy_planner = DummyPlanner(plan)
-        graph = build_graph(cfg, planner_agent=dummy_planner)
+
+        def handler(state):
+            return "ACCEPT_PLAN", ""
+
+        graph = build_graph(cfg, planner_agent=dummy_planner, review_handler=handler)
 
         state = initial_state("Test Topic", locale="en-US", metadata={"context": "ctx"})
         result = graph.invoke(state.model_dump())
 
         self.assertIn("plan", result)
         self.assertEqual(result["plan"]["topic"], "Test")
-        self.assertTrue(result["metadata"]["awaiting_review"])
+        self.assertEqual(result["metadata"]["last_review_action"], "ACCEPT_PLAN")
         self.assertEqual(dummy_planner.calls, [("Test Topic", "en-US", "ctx")])
+
+    def test_request_changes_loops_back_to_planner(self) -> None:
+        cfg = AppConfig()
+        plan1 = Plan(
+            topic="First",
+            goal="First",
+            steps=[
+                {
+                    "id": "step-1",
+                    "title": "Initial",
+                    "step_type": "RESEARCH",
+                    "expected_outcome": "Collect",
+                }
+            ],
+            assumptions=[],
+            risks=[],
+        )
+        plan2 = Plan(
+            topic="Second",
+            goal="Second",
+            steps=[
+                {
+                    "id": "step-1",
+                    "title": "Replan",
+                    "step_type": "RESEARCH",
+                    "expected_outcome": "Update",
+                }
+            ],
+            assumptions=[],
+            risks=[],
+        )
+
+        dummy_planner = DummyPlanner(plan1)
+        dummy_planner.plans = [plan1, plan2]
+        dummy_planner.index = 0
+
+        def generate_plan(topic: str, *, locale: str, context: str | None = None, extra_meta=None):
+            plan_obj = dummy_planner.plans[dummy_planner.index]
+            dummy_planner.index = min(dummy_planner.index + 1, len(dummy_planner.plans) - 1)
+            dummy_planner.calls.append((topic, locale, context))
+            return plan_obj
+
+        dummy_planner.generate_plan = generate_plan  # type: ignore[assignment]
+
+        def handler(state):
+            if state.plan and state.plan.topic == "First":
+                return "REQUEST_CHANGES", "Add more detail"
+            return "ACCEPT_PLAN", ""
+
+        graph = build_graph(cfg, planner_agent=dummy_planner, review_handler=handler)
+
+        state = initial_state("Topic", locale="en-US", metadata={"context": "ctx"})
+        result = graph.invoke(state.model_dump())
+
+        self.assertEqual(dummy_planner.calls, [("Topic", "en-US", "ctx"), ("Topic", "en-US", "ctx\nReviewer feedback: Add more detail")])
+        self.assertEqual(result["plan"]["topic"], "Second")
+        self.assertEqual(result["metadata"].get("last_review_action"), "ACCEPT_PLAN")
 
 
 if __name__ == "__main__":

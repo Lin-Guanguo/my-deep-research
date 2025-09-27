@@ -5,7 +5,6 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Tuple
 
@@ -37,53 +36,68 @@ def main(argv: List[str] | None = None) -> None:
     context = args.context or ""
 
     planner_agent = PlannerAgent(config)
-    graph = build_graph(config, planner_agent=planner_agent)
-
+    attempts = {"count": 0}
     review_log: List[Dict[str, str]] = []
-    current_context = context
-    attempt = 0
-    max_attempts = args.max_iterations
+    current_context = {"value": context}
 
-    while attempt < max_attempts:
-        attempt += 1
-        state = initial_state(question, locale=locale, metadata={"context": current_context})
-        result = graph.invoke(state.model_dump())
-        plan = Plan.model_validate(result["plan"])
-        _display_plan(plan)
+    def review_handler(state) -> tuple[str, str]:
+        attempts["count"] += 1
+        if attempts["count"] > args.max_iterations:
+            print("[warn] Exceeded max review attempts, aborting.")
+            return "ABORT", "Exceeded max iterations"
 
+        plan_obj = state.plan
+        if plan_obj is None:
+            return "ABORT", "Planner returned no plan"
+
+        _display_plan(plan_obj)
         if args.auto_accept:
             action, feedback = "ACCEPT_PLAN", ""
         else:
             action, feedback = _prompt_review_action()
 
-        review_log.append({"attempt": str(attempt), "action": action, "feedback": feedback})
+        review_log.append(
+            {
+                "attempt": str(attempts["count"]),
+                "action": action,
+                "feedback": feedback,
+            }
+        )
 
-        if action == "ACCEPT_PLAN":
-            _emit_summary(plan, locale)
-            if not args.no_store:
-                _store_plan(
-                    question=question,
-                    locale=locale,
-                    context=current_context,
-                    plan=plan,
-                    review_log=review_log,
-                )
-            return
+        if action == "REQUEST_CHANGES" and feedback:
+            current_context["value"] = _merge_context(current_context["value"], feedback)
+            state.metadata["context"] = current_context["value"]
 
-        if action == "REQUEST_CHANGES":
-            if not feedback:
-                print("[warn] Feedback is empty; using previous context.")
-            else:
-                current_context = _merge_context(current_context, feedback)
-            continue
+        return action, feedback
 
-        if action == "ABORT":
-            print("[info] Workflow aborted by reviewer.")
-            return
+    graph = build_graph(
+        config,
+        planner_agent=planner_agent,
+        review_handler=review_handler,  # type: ignore[arg-type]
+    )
 
-        print("[warn] Unknown action received; retrying planner.")
+    initial = initial_state(
+        question,
+        locale=locale,
+        metadata={"context": current_context["value"]},
+    )
+    result = graph.invoke(initial.model_dump())
+    final_state = Plan.model_validate(result["plan"]) if result.get("plan") else None
+    last_action = result.get("metadata", {}).get("last_review_action", "ACCEPT_PLAN")
 
-    raise SystemExit("Planner review loop exceeded max iterations")
+    if last_action == "ABORT" or final_state is None:
+        print("[info] Workflow aborted by reviewer.")
+        return
+
+    _emit_summary(final_state, locale)
+    if not args.no_store:
+        _store_plan(
+            question=question,
+            locale=locale,
+            context=current_context["value"],
+            plan=final_state,
+            review_log=review_log,
+        )
 
 
 def _build_parser() -> argparse.ArgumentParser:

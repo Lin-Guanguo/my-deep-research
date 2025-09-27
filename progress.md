@@ -4,6 +4,7 @@
 - 进入阶段 1：实现 Planner + 人在环链路（LangGraph 图、节点实现与 CLI 审阅流程）。
 
 ## 已完成
+- 将 LangGraph `human_review` 节点与 CLI 审阅指令联动，实现自动回流与再规划。
 - 实现 `src/agents/planner.py` 与提示模板，封装 OpenRouter 计划生成逻辑并编写单测。
 - 构建 LangGraph 管线（`build_graph`）串联 coordinator→planner→human_review→reporter，支持依赖注入与测试。
 - 扩展 `scripts/run_cli.py`，完成 Planner→人在环审阅→计划存档流程并提供 `--auto-accept` 选项与 CLI 测试。
@@ -30,6 +31,5 @@
 - 长期目标：构建可复用的 Deep Research 工具链，支持多种调研场景的闭环执行。
 
 ## 下一步
-- 将 `human_review` 节点与 CLI 指令联动，支持回写审阅结果再运行 Planner。
 - 设计计划持久化格式的审阅记录结构（含 JSONL schema 校验与回放脚本）。
 - 开始规划 Researcher 节点接口，确保 Stage 2 可直接接入 LangGraph 状态。
