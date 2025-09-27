@@ -3,26 +3,23 @@
 from __future__ import annotations
 
 import argparse
+import json
 import sys
+from datetime import datetime
 from pathlib import Path
+from typing import Dict, List, Tuple
+
+from src.agents.planner import PlannerAgent
+from src.config.configuration import load_config
+from src.graph.builder import build_graph, initial_state
+from src.models.plan import Plan
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
+PLANS_DIR = PROJECT_ROOT / "output" / "plans"
 
 
-def main(argv: list[str] | None = None) -> None:
-    """Placeholder CLI launcher.
-
-    Stage 0 focuses on defining the human review contract; the actual LangGraph
-    execution will be implemented in Stage 1. For now we surface the CLI usage
-    expectations documented in `docs/human-review-cli.md`.
-    """
-
-    parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "--show-review-help",
-        action="store_true",
-        help="Print human review workflow instructions and exit.",
-    )
+def main(argv: List[str] | None = None) -> None:
+    parser = _build_parser()
     args = parser.parse_args(argv)
 
     if args.show_review_help:
@@ -31,7 +28,155 @@ def main(argv: list[str] | None = None) -> None:
         sys.stdout.write("\n")
         return
 
-    raise NotImplementedError("CLI runner not implemented yet; see docs/human-review-cli.md")
+    question = args.question or input("Enter research question: ").strip()
+    if not question:
+        raise SystemExit("Question is required")
+
+    config = load_config()
+    locale = args.locale or config.runtime.locale
+    context = args.context or ""
+
+    planner_agent = PlannerAgent(config)
+    graph = build_graph(config, planner_agent=planner_agent)
+
+    review_log: List[Dict[str, str]] = []
+    current_context = context
+    attempt = 0
+    max_attempts = args.max_iterations
+
+    while attempt < max_attempts:
+        attempt += 1
+        state = initial_state(question, locale=locale, metadata={"context": current_context})
+        result = graph.invoke(state.model_dump())
+        plan = Plan.model_validate(result["plan"])
+        _display_plan(plan)
+
+        if args.auto_accept:
+            action, feedback = "ACCEPT_PLAN", ""
+        else:
+            action, feedback = _prompt_review_action()
+
+        review_log.append({"attempt": str(attempt), "action": action, "feedback": feedback})
+
+        if action == "ACCEPT_PLAN":
+            _emit_summary(plan, locale)
+            if not args.no_store:
+                _store_plan(
+                    question=question,
+                    locale=locale,
+                    context=current_context,
+                    plan=plan,
+                    review_log=review_log,
+                )
+            return
+
+        if action == "REQUEST_CHANGES":
+            if not feedback:
+                print("[warn] Feedback is empty; using previous context.")
+            else:
+                current_context = _merge_context(current_context, feedback)
+            continue
+
+        if action == "ABORT":
+            print("[info] Workflow aborted by reviewer.")
+            return
+
+        print("[warn] Unknown action received; retrying planner.")
+
+    raise SystemExit("Planner review loop exceeded max iterations")
+
+
+def _build_parser() -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description="Deep Research planner CLI")
+    parser.add_argument("--question", "-q", help="Research question to plan")
+    parser.add_argument("--locale", help="Locale for prompts (default from config)")
+    parser.add_argument("--context", help="Additional context hints for planner")
+    parser.add_argument("--auto-accept", action="store_true", help="Skip manual review")
+    parser.add_argument("--no-store", action="store_true", help="Do not persist plan output")
+    parser.add_argument(
+        "--max-iterations",
+        type=int,
+        default=3,
+        help="Maximum planner retries when requesting changes",
+    )
+    parser.add_argument(
+        "--show-review-help",
+        action="store_true",
+        help="Print human review workflow instructions and exit.",
+    )
+    return parser
+
+
+def _display_plan(plan: Plan) -> None:
+    print("\n=== Proposed Plan ===")
+    print(f"Topic: {plan.topic}")
+    print(f"Goal: {plan.goal}")
+    print("Assumptions:")
+    for item in plan.assumptions or []:
+        print(f"  - {item}")
+    print("Risks:")
+    for item in plan.risks or []:
+        print(f"  - {item}")
+    print("Steps:")
+    for step in plan.steps:
+        print(f"  {step.id} [{step.step_type}] {step.title}")
+        print(f"     Expected outcome: {step.expected_outcome}")
+
+
+def _prompt_review_action() -> Tuple[str, str]:
+    prompt = "Select action [ACCEPT_PLAN | REQUEST_CHANGES | ABORT]: "
+    action = input(prompt).strip().upper()
+    feedback = ""
+    if action == "REQUEST_CHANGES":
+        print("Enter feedback (finish with empty line):")
+        lines = []
+        while True:
+            line = input()
+            if not line.strip():
+                break
+            lines.append(line.strip())
+        feedback = "\n".join(lines)
+    return action, feedback
+
+
+def _emit_summary(plan: Plan, locale: str) -> None:
+    print("\n[success] Plan approved.")
+    print(f"Locale: {locale}")
+    print(f"Steps ({len(plan.steps)}):")
+    for step in plan.steps:
+        print(f"  - {step.id}: {step.title}")
+
+
+def _merge_context(existing: str, feedback: str) -> str:
+    if not existing:
+        return feedback
+    return existing + "\nReviewer feedback: " + feedback
+
+
+def _store_plan(
+    *,
+    question: str,
+    locale: str,
+    context: str,
+    plan: Plan,
+    review_log: List[Dict[str, str]],
+) -> None:
+    PLANS_DIR.mkdir(parents=True, exist_ok=True)
+    record = {
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "question": question,
+        "locale": locale,
+        "context": context,
+        "plan": plan.model_dump(),
+        "review_log": review_log,
+    }
+    path = PLANS_DIR / "plans.jsonl"
+    with path.open("a", encoding="utf-8") as handle:
+        handle.write(json.dumps(record, ensure_ascii=False) + "\n")
+
+
+if __name__ == "__main__":
+    main()
 
 
 if __name__ == "__main__":

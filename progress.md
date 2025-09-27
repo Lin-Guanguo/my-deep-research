@@ -1,9 +1,13 @@
 # Deep Research 学习进度
 
 ## Current Focus
-- 推进阶段 0：完善配置验证、通用模板与 Planner 前置工作，准备进入 LangGraph 实装阶段。
+- 进入阶段 1：实现 Planner + 人在环链路（LangGraph 图、节点实现与 CLI 审阅流程）。
 
 ## 已完成
+- 实现 `src/agents/planner.py` 与提示模板，封装 OpenRouter 计划生成逻辑并编写单测。
+- 构建 LangGraph 管线（`build_graph`）串联 coordinator→planner→human_review→reporter，支持依赖注入与测试。
+- 扩展 `scripts/run_cli.py`，完成 Planner→人在环审阅→计划存档流程并提供 `--auto-accept` 选项与 CLI 测试。
+- 撰写 `docs/stage1-roadmap.md` 对齐阶段 1 交付物与实现任务。
 - 通读 `Deep-Research-Project-Plan.md` 与 `DeerFlow-Tech-Stack.md`，梳理六周学习主线。
 - 制定阶段性学习路线与资源清单，用于指导后续实践。
 - 初始化 `src/graph|config|tools|report|scripts` 目录，并放置基础占位模块与 CLI 入口。
@@ -26,6 +30,6 @@
 - 长期目标：构建可复用的 Deep Research 工具链，支持多种调研场景的闭环执行。
 
 ## 下一步
-- 使用真实问题运行 `scripts/validate_planner.py`，汇总失败样本与修订提示词。
-- 启动 Markdown Reporter 原型，实现引用标注与 TODO 提醒的最小功能。
-- 将 CLI 人审流程同 LangGraph builder 草案对齐，确定状态读写接口。
+- 将 `human_review` 节点与 CLI 指令联动，支持回写审阅结果再运行 Planner。
+- 设计计划持久化格式的审阅记录结构（含 JSONL schema 校验与回放脚本）。
+- 开始规划 Researcher 节点接口，确保 Stage 2 可直接接入 LangGraph 状态。
