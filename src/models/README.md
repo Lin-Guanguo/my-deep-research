@@ -11,13 +11,21 @@
 - `StepStatus`
   - `PENDING` → `IN_PROGRESS` → `COMPLETED` 为默认执行流；`BLOCKED` 用于等待外部输入。
 
+## ResearchNote
+Researcher 在执行阶段产生的结构化笔记，字段说明：
+- `source`：可追溯的引用（URL、文献编号等），不能为空。
+- `claim`：围绕单一事实或洞察的陈述。
+- `evidence`：可选的关键语句、数据或上下文摘要。
+- `confidence`：0~1 之间的置信度分数，便于 Reporter/Reviewer 判断是否需要补充验证。
+- `todo`：若该笔记仍有待办事项或疑问，可在此描述。
+
 ## PlanStep
 计划中的单个步骤，包含：
 - `id`：稳定的标识符（如 `step-1`），用于状态回写。
 - `title`/`expected_outcome`：对步骤目的与完成标准的简述。
 - `step_type`：由 Planner 判定的执行类型，指导 Researcher 行为。
 - `status`：运行时状态，初始为 `PENDING`，由执行方更新。
-- `notes`：执行过程中积累的研究笔记，通常由 Researcher 填充。
+- `notes`：`ResearchNote` 列表，执行过程中积累的结构化研究笔记。
 - `references`：与笔记对应的来源链接或引用编号。
 - `execution_result`：对该步骤执行情况的总结，可供 Reporter 复用。
 

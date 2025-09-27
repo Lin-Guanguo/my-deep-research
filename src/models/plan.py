@@ -6,7 +6,7 @@ from enum import Enum
 from typing import List, Optional
 
 # Pydantic 提供字段校验与 JSON 序列化，便于 LangGraph 节点共享结构化计划状态。
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 
 
 class StepType(str, Enum):
@@ -26,6 +26,28 @@ class StepStatus(str, Enum):
     COMPLETED = "COMPLETED"
     BLOCKED = "BLOCKED"
 
+class ResearchNote(BaseModel):
+    """Structured note captured by the Researcher for downstream synthesis."""
+
+    source: str = Field(..., description="Citation URL or identifier backing the claim")
+    claim: str = Field(..., description="Single factual statement or insight")
+    evidence: Optional[str] = Field(
+        default=None, description="Supporting detail, quote, or data excerpt"
+    )
+    confidence: Optional[float] = Field(
+        default=None, ge=0.0, le=1.0, description="Confidence score between 0 and 1"
+    )
+    todo: Optional[str] = Field(
+        default=None,
+        description="Follow-up action if the claim needs verification or enrichment",
+    )
+
+    @validator("source")
+    def _validate_source(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("note.source must not be empty")
+        return value
+
 
 class PlanStep(BaseModel):
     """Single actionable step produced by the Planner."""
@@ -35,7 +57,9 @@ class PlanStep(BaseModel):
     step_type: StepType = Field(..., description="Indicates how the Researcher should handle the step")
     expected_outcome: str = Field(..., description="What success looks like for this step")
     status: StepStatus = Field(default=StepStatus.PENDING, description="Runtime execution status")
-    notes: List[str] = Field(default_factory=list, description="Accumulated research notes or highlights")
+    notes: List[ResearchNote] = Field(
+        default_factory=list, description="Structured research notes recorded during execution"
+    )
     references: List[str] = Field(default_factory=list, description="Captured citation URLs or IDs")
     execution_result: Optional[str] = Field(
         default=None, description="Summary of what happened during execution"
@@ -75,10 +99,18 @@ class Plan(BaseModel):
         step = self.get_step(step_id)
         step.status = status
 
-    def append_note(self, step_id: str, note: str, reference: Optional[str] = None) -> None:
-        """Attach research notes (and optional citation) to a step during execution."""
+    def append_note(
+        self, step_id: str, note: ResearchNote | dict, reference: Optional[str] = None
+    ) -> None:
+        """Attach a structured research note (and optional citation) to a step."""
 
         step = self.get_step(step_id)
-        step.notes.append(note)
+
+        if isinstance(note, dict):
+            research_note = ResearchNote(**note)
+        else:
+            research_note = note
+
+        step.notes.append(research_note)
         if reference:
             step.references.append(reference)

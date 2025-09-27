@@ -13,12 +13,16 @@
 - 新增 `src/models/plan.py` 与 `src/models/README.md`，统一 Planner/Researcher/Reporter 共享的数据模型。
 - 填写真实密钥后运行 demo，成功验证 OpenRouter 与 Tavily 的调用链并刷新示例输出。
 - 整理 Planner 提示词与 JSON 输出示例，记录于 `docs/planner-design.md`。
+- 编写 `tests/test_configuration.py` 验证 settings/secret 合并逻辑，完成配置验证的自检基础。
+- 设计 `ResearchNote` 结构并更新模型/文档，沉淀 `docs/research-notes-spec.md` 指南。
+- 整理 `samples/planner_plans.jsonl` 与校验单测，确保 Planner 输出示例可解析。
+- 明确 LangGraph 状态与节点契约，新增 `src/graph/state.py` 与 `docs/langgraph-contract.md`。
 
 ## 主题与目标
 - 当前示例练习：LangGraph 深度调研代理最佳实践（可替换为其他问题）。
 - 长期目标：构建可复用的 Deep Research 工具链，支持多种调研场景的闭环执行。
 
 ## 下一步
-- 收集更多调研案例与高质量来源，扩充 Planner 示例数据集。
-- 细化 LangGraph Planner 节点的函数签名与状态流（含 interrupt 逻辑）。
-- 设计 Researcher 笔记结构与 Reporter 引用格式的验证用例。
+- 将 Planner 校验流程接入真实 LLM 生成结果，构建最小评测脚本。
+- 实现 Reporter 引用校验与置信度提示逻辑的原型测试。
+- 准备 CLI 人审交互方案，定义 `interrupt` 指令格式与回写流程。
