@@ -1,0 +1,17 @@
+[
+  {
+    "topic": "LangGraph 深度研究代理最佳实践",
+    "locale": "zh-CN",
+    "context": "关注 Planner/Researcher/Reporter 协作模式与引用覆盖。"
+  },
+  {
+    "topic": "Edge AI rollout strategy for mid-size retail chains",
+    "locale": "en-US",
+    "context": "Highlight phased deployment, vendor selection, and governance."
+  },
+  {
+    "topic": "Kubernetes cost optimization for multi-tenant SaaS",
+    "locale": "en-US",
+    "context": "Needs actionable steps for monitoring, autoscaling, and workload isolation."
+  }
+]

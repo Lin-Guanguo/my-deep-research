@@ -17,12 +17,15 @@
 - 设计 `ResearchNote` 结构并更新模型/文档，沉淀 `docs/research-notes-spec.md` 指南。
 - 整理 `samples/planner_plans.jsonl` 与校验单测，确保 Planner 输出示例可解析。
 - 明确 LangGraph 状态与节点契约，新增 `src/graph/state.py` 与 `docs/langgraph-contract.md`。
+- 新增 `scripts/validate_planner.py`，落地 LLM 调用 + `Plan` 验证闭环，并提供示例输出。
+- 实现 Reporter 端笔记校验原型（`src/report/validation.py` + 单测），覆盖引用与置信度提示。
+- 补充人在环 CLI 流程文档与入口提示（`docs/human-review-cli.md`、`scripts/run_cli.py --show-review-help`）。
 
 ## 主题与目标
 - 当前示例练习：LangGraph 深度调研代理最佳实践（可替换为其他问题）。
 - 长期目标：构建可复用的 Deep Research 工具链，支持多种调研场景的闭环执行。
 
 ## 下一步
-- 将 Planner 校验流程接入真实 LLM 生成结果，构建最小评测脚本。
-- 实现 Reporter 引用校验与置信度提示逻辑的原型测试。
-- 准备 CLI 人审交互方案，定义 `interrupt` 指令格式与回写流程。
+- 使用真实问题运行 `scripts/validate_planner.py`，汇总失败样本与修订提示词。
+- 启动 Markdown Reporter 原型，实现引用标注与 TODO 提醒的最小功能。
+- 将 CLI 人审流程同 LangGraph builder 草案对齐，确定状态读写接口。

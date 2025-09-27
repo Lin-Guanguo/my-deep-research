@@ -24,16 +24,19 @@ def call_llm(
     temperature: float = 0.0,
     timeout: float = 30.0,
     extra: Mapping[str, Any] | None = None,
+    system_prompt: str | None = None,
 ) -> str:
     """Call OpenRouter with the provided prompt and return the text response."""
 
     if not openrouter_key:
         raise ValueError("OpenRouter API key is required")
 
+    system_content = system_prompt or "You are a helpful research assistant."
+
     payload = {
         "model": model,
         "messages": [
-            {"role": "system", "content": "You are a helpful research assistant."},
+            {"role": "system", "content": system_content},
             {"role": "user", "content": prompt},
         ],
         "temperature": temperature,

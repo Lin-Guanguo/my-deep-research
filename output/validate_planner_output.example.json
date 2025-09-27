@@ -1,0 +1,209 @@
+{
+  "total": 3,
+  "success": 3,
+  "failures": [],
+  "plans": [
+    {
+      "topic": "LangGraph 深度研究代理最佳实践",
+      "locale": "zh-CN",
+      "plan": {
+        "topic": "LangGraph 深度研究代理最佳实践",
+        "goal": "整理构建 LangGraph 多代理深度调研流程的可复用实践。",
+        "assumptions": [
+          "已配置 OpenRouter 与 Tavily API",
+          "研究聚焦文本资料"
+        ],
+        "risks": [
+          "文档版本更新导致示例过时",
+          "引用覆盖率不足"
+        ],
+        "steps": [
+          {
+            "id": "step-1",
+            "title": "梳理官方 LangGraph 能力",
+            "step_type": "RESEARCH",
+            "expected_outcome": "列出支持多代理协作的关键特性",
+            "status": "PENDING",
+            "notes": [],
+            "references": [],
+            "execution_result": null
+          },
+          {
+            "id": "step-2",
+            "title": "分析社区最佳实践",
+            "step_type": "PROCESS",
+            "expected_outcome": "总结可复用的 Planner/Researcher 模式",
+            "status": "PENDING",
+            "notes": [],
+            "references": [],
+            "execution_result": null
+          },
+          {
+            "id": "step-3",
+            "title": "汇总行动建议与缺口",
+            "step_type": "SYNTHESIZE",
+            "expected_outcome": "形成实施清单并标记需审阅事项",
+            "status": "PENDING",
+            "notes": [],
+            "references": [],
+            "execution_result": null
+          },
+          {
+            "id": "step-4",
+            "title": "准备人工审阅检查表",
+            "step_type": "REVIEW",
+            "expected_outcome": "确认引用覆盖与风险记录",
+            "status": "PENDING",
+            "notes": [],
+            "references": [],
+            "execution_result": null
+          }
+        ],
+        "metadata": {
+          "locale": "zh-CN",
+          "budget_tokens": 8000,
+          "budget_cost_usd": 2.5,
+          "reviewer": null
+        }
+      }
+    },
+    {
+      "topic": "Edge AI rollout strategy for mid-size retail chains",
+      "locale": "en-US",
+      "plan": {
+        "topic": "Edge AI rollout strategy for mid-size retail chains",
+        "goal": "Outline a phased deployment roadmap for edge AI across 50+ retail stores.",
+        "assumptions": [
+          "Cloud analytics platform already exists",
+          "Edge inference hardware budget is approved"
+        ],
+        "risks": [
+          "Hardware procurement delays",
+          "Store connectivity variability"
+        ],
+        "steps": [
+          {
+            "id": "step-1",
+            "title": "Audit current retail data flows",
+            "step_type": "RESEARCH",
+            "expected_outcome": "Inventory existing sensors, integrations, and latency requirements",
+            "status": "PENDING",
+            "notes": [],
+            "references": [],
+            "execution_result": null
+          },
+          {
+            "id": "step-2",
+            "title": "Compare edge hardware/software stacks",
+            "step_type": "RESEARCH",
+            "expected_outcome": "Summarize 3 vendor options with cost, support, and deployment model",
+            "status": "PENDING",
+            "notes": [],
+            "references": [],
+            "execution_result": null
+          },
+          {
+            "id": "step-3",
+            "title": "Define phased rollout plan",
+            "step_type": "SYNTHESIZE",
+            "expected_outcome": "Describe pilot, scale-out, and governance milestones",
+            "status": "PENDING",
+            "notes": [],
+            "references": [],
+            "execution_result": null
+          },
+          {
+            "id": "step-4",
+            "title": "Document risk mitigation actions",
+            "step_type": "PROCESS",
+            "expected_outcome": "List operational, security, and compliance risks with fallback procedures",
+            "status": "PENDING",
+            "notes": [],
+            "references": [],
+            "execution_result": null
+          },
+          {
+            "id": "step-5",
+            "title": "Prepare executive review packet",
+            "step_type": "REVIEW",
+            "expected_outcome": "Provide talking points and budget summary for leadership sign-off",
+            "status": "PENDING",
+            "notes": [],
+            "references": [],
+            "execution_result": null
+          }
+        ],
+        "metadata": {
+          "locale": "en-US",
+          "budget_tokens": 12000,
+          "budget_cost_usd": 4.0,
+          "reviewer": null
+        }
+      }
+    },
+    {
+      "topic": "Kubernetes cost optimization for multi-tenant SaaS",
+      "locale": "en-US",
+      "plan": {
+        "topic": "Kubernetes cost optimization for multi-tenant SaaS",
+        "goal": "Identify actionable levers to reduce infrastructure spend without impacting tenant isolation.",
+        "assumptions": [
+          "Workloads run on managed Kubernetes in multiple regions",
+          "Observability stack is available for cost attribution"
+        ],
+        "risks": [
+          "Aggressive right-sizing may impact performance",
+          "Cluster autoscaler misconfiguration"
+        ],
+        "steps": [
+          {
+            "id": "step-1",
+            "title": "Audit baseline resource consumption",
+            "step_type": "RESEARCH",
+            "expected_outcome": "Gather current spend by namespace and workload class",
+            "status": "PENDING",
+            "notes": [],
+            "references": [],
+            "execution_result": null
+          },
+          {
+            "id": "step-2",
+            "title": "Evaluate optimization levers",
+            "step_type": "PROCESS",
+            "expected_outcome": "Summarize impact of autoscaling, bin packing, and spot node pools",
+            "status": "PENDING",
+            "notes": [],
+            "references": [],
+            "execution_result": null
+          },
+          {
+            "id": "step-3",
+            "title": "Draft phased optimization roadmap",
+            "step_type": "SYNTHESIZE",
+            "expected_outcome": "Outline quick wins vs. longer-term platform changes",
+            "status": "PENDING",
+            "notes": [],
+            "references": [],
+            "execution_result": null
+          },
+          {
+            "id": "step-4",
+            "title": "Define monitoring and rollback guardrails",
+            "step_type": "REVIEW",
+            "expected_outcome": "List KPIs, alert thresholds, and rollback criteria for stakeholder approval",
+            "status": "PENDING",
+            "notes": [],
+            "references": [],
+            "execution_result": null
+          }
+        ],
+        "metadata": {
+          "locale": "en-US",
+          "budget_tokens": 9000,
+          "budget_cost_usd": 3.0,
+          "reviewer": null
+        }
+      }
+    }
+  ]
+}
