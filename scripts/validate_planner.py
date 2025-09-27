@@ -17,7 +17,42 @@ from src.models.plan import Plan
 from src.tools.llm import LLMError, call_llm
 
 OUTPUT_FILENAME = "validate_planner_output.json"
-SYSTEM_PROMPT = """You are the Planner agent inside a deep-research workflow. Your goal is to break a user's question into 3-6 actionable steps.\n\nRules:\n1. Output **valid JSON** matching the provided schema.\n2. Each step needs a unique `id` (`step-1`, `step-2`, ...).\n3. Use `RESEARCH` when new information is required, `PROCESS` when existing notes must be summarised, `SYNTHESIZE` when consolidating findings, and `REVIEW` for human checks.\n4. Provide a short `expected_outcome` describing the success criteria.\n5. Document explicit `assumptions` and potential `risks`."""
+SYSTEM_PROMPT = """You are the Planner agent inside a systematic deep-research workflow. Produce a plan JSON payload that conforms exactly to the schema below.
+
+Output requirements:
+- Return raw JSON only (no markdown, commentary, or code fences).
+- Use double quotes for all keys/strings.
+- Preserve the property order shown in the schema.
+
+Schema:
+{
+  "topic": string,
+  "goal": string,
+  "assumptions": [string, ...],
+  "risks": [string, ...],
+  "steps": [
+    {
+      "id": "step-1" | "step-2" | ...,
+      "title": string,
+      "step_type": "RESEARCH" | "PROCESS" | "SYNTHESIZE" | "REVIEW",
+      "expected_outcome": string
+    }
+  ],
+  "metadata": {
+    "locale": string,
+    "budget_tokens": integer,
+    "budget_cost_usd": float,
+    "reviewer": string | null
+  }
+}
+
+Constraints:
+- Provide 3 to 6 steps; IDs must increment sequentially starting at "step-1".
+- `topic` and `goal` must restate the user's request in the specified locale.
+- `metadata.locale` must equal the user's locale input.
+- Choose reasonable budgets (tokens,cost) for the task difficulty.
+- Use null for reviewer when no reviewer is known.
+- Do not add any extra fields."""
 
 USER_PROMPT_TEMPLATE = """User Question: {topic}\nLocale: {locale}\nContext Hints: {context}"""
 
@@ -113,7 +148,7 @@ def run_validation(questions_path: Path, *, output_dir: Path) -> Dict[str, Any]:
         )
 
     output_dir.mkdir(parents=True, exist_ok=True)
-    output_path = output_dir / OUTPUT_FILENAME
+    output_path = (output_dir / OUTPUT_FILENAME).resolve()
     output_path.write_text(json.dumps(results, ensure_ascii=False, indent=2), encoding="utf-8")
 
     return {"output_path": output_path, "summary": {k: results[k] for k in ("total", "success")}}
@@ -137,9 +172,15 @@ def main(argv: List[str] | None = None) -> None:
 
     result = run_validation(args.questions, output_dir=args.output_dir)
     summary = result["summary"]
+    output_path = result["output_path"]
+    try:
+        relative_path = output_path.relative_to(PROJECT_ROOT)
+    except ValueError:
+        relative_path = output_path
+
     print(
         f"Validation complete. {summary['success']} / {summary['total']} plans parsed successfully.\n"
-        f"Saved details to {result['output_path'].relative_to(PROJECT_ROOT)}"
+        f"Saved details to {relative_path}"
     )
 
 

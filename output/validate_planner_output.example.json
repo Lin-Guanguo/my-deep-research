@@ -8,21 +8,13 @@
       "locale": "zh-CN",
       "plan": {
         "topic": "LangGraph 深度研究代理最佳实践",
-        "goal": "整理构建 LangGraph 多代理深度调研流程的可复用实践。",
-        "assumptions": [
-          "已配置 OpenRouter 与 Tavily API",
-          "研究聚焦文本资料"
-        ],
-        "risks": [
-          "文档版本更新导致示例过时",
-          "引用覆盖率不足"
-        ],
+        "goal": "探索 LangGraph 在深度研究中的最佳实践，特别关注 Planner、Researcher 和 Reporter 的协作模式与引用覆盖。",
         "steps": [
           {
             "id": "step-1",
-            "title": "梳理官方 LangGraph 能力",
+            "title": "文献回顾",
             "step_type": "RESEARCH",
-            "expected_outcome": "列出支持多代理协作的关键特性",
+            "expected_outcome": "收集关于 LangGraph 和相关协作模式的现有文献和案例研究。",
             "status": "PENDING",
             "notes": [],
             "references": [],
@@ -30,9 +22,9 @@
           },
           {
             "id": "step-2",
-            "title": "分析社区最佳实践",
-            "step_type": "PROCESS",
-            "expected_outcome": "总结可复用的 Planner/Researcher 模式",
+            "title": "分析协作模式",
+            "step_type": "SYNTHESIZE",
+            "expected_outcome": "总结 Planner、Researcher 和 Reporter 之间的协作模式及其优缺点。",
             "status": "PENDING",
             "notes": [],
             "references": [],
@@ -40,9 +32,9 @@
           },
           {
             "id": "step-3",
-            "title": "汇总行动建议与缺口",
-            "step_type": "SYNTHESIZE",
-            "expected_outcome": "形成实施清单并标记需审阅事项",
+            "title": "评估引用覆盖",
+            "step_type": "RESEARCH",
+            "expected_outcome": "分析引用覆盖的现状及其对研究质量的影响。",
             "status": "PENDING",
             "notes": [],
             "references": [],
@@ -50,20 +42,40 @@
           },
           {
             "id": "step-4",
-            "title": "准备人工审阅检查表",
-            "step_type": "REVIEW",
-            "expected_outcome": "确认引用覆盖与风险记录",
+            "title": "整合发现",
+            "step_type": "SYNTHESIZE",
+            "expected_outcome": "整合文献回顾和分析结果，形成最佳实践建议。",
+            "status": "PENDING",
+            "notes": [],
+            "references": [],
+            "execution_result": null
+          },
+          {
+            "id": "step-5",
+            "title": "撰写报告",
+            "step_type": "PROCESS",
+            "expected_outcome": "撰写关于 LangGraph 深度研究代理最佳实践的详细报告。",
             "status": "PENDING",
             "notes": [],
             "references": [],
             "execution_result": null
           }
         ],
+        "assumptions": [
+          "用户对 LangGraph 有基本了解。",
+          "研究将集中在协作模式和引用覆盖的有效性上。",
+          "相关文献和案例研究可用以支持分析。"
+        ],
+        "risks": [
+          "可能缺乏足够的案例研究支持。",
+          "不同角色之间的协作模式可能存在差异。",
+          "引用覆盖的标准可能不一致。"
+        ],
         "metadata": {
           "locale": "zh-CN",
-          "budget_tokens": 8000,
-          "budget_cost_usd": 2.5,
-          "reviewer": null
+          "reviewer": null,
+          "budget_tokens": 500,
+          "budget_cost_usd": 75.0
         }
       }
     },
@@ -72,21 +84,13 @@
       "locale": "en-US",
       "plan": {
         "topic": "Edge AI rollout strategy for mid-size retail chains",
-        "goal": "Outline a phased deployment roadmap for edge AI across 50+ retail stores.",
-        "assumptions": [
-          "Cloud analytics platform already exists",
-          "Edge inference hardware budget is approved"
-        ],
-        "risks": [
-          "Hardware procurement delays",
-          "Store connectivity variability"
-        ],
+        "goal": "Develop a comprehensive strategy for the phased deployment of Edge AI in mid-size retail chains, focusing on vendor selection and governance.",
         "steps": [
           {
             "id": "step-1",
-            "title": "Audit current retail data flows",
+            "title": "Conduct a needs assessment",
             "step_type": "RESEARCH",
-            "expected_outcome": "Inventory existing sensors, integrations, and latency requirements",
+            "expected_outcome": "Identify specific needs and challenges of mid-size retail chains regarding Edge AI.",
             "status": "PENDING",
             "notes": [],
             "references": [],
@@ -94,9 +98,9 @@
           },
           {
             "id": "step-2",
-            "title": "Compare edge hardware/software stacks",
+            "title": "Evaluate potential vendors",
             "step_type": "RESEARCH",
-            "expected_outcome": "Summarize 3 vendor options with cost, support, and deployment model",
+            "expected_outcome": "Create a shortlist of vendors that can provide Edge AI solutions tailored for retail.",
             "status": "PENDING",
             "notes": [],
             "references": [],
@@ -104,9 +108,9 @@
           },
           {
             "id": "step-3",
-            "title": "Define phased rollout plan",
-            "step_type": "SYNTHESIZE",
-            "expected_outcome": "Describe pilot, scale-out, and governance milestones",
+            "title": "Develop a phased deployment plan",
+            "step_type": "PROCESS",
+            "expected_outcome": "Outline a step-by-step plan for implementing Edge AI in phases across retail locations.",
             "status": "PENDING",
             "notes": [],
             "references": [],
@@ -114,9 +118,9 @@
           },
           {
             "id": "step-4",
-            "title": "Document risk mitigation actions",
+            "title": "Establish governance framework",
             "step_type": "PROCESS",
-            "expected_outcome": "List operational, security, and compliance risks with fallback procedures",
+            "expected_outcome": "Define roles, responsibilities, and policies for managing Edge AI deployment and operations.",
             "status": "PENDING",
             "notes": [],
             "references": [],
@@ -124,20 +128,40 @@
           },
           {
             "id": "step-5",
-            "title": "Prepare executive review packet",
+            "title": "Pilot implementation",
+            "step_type": "PROCESS",
+            "expected_outcome": "Test the Edge AI solution in a controlled environment to evaluate performance and gather feedback.",
+            "status": "PENDING",
+            "notes": [],
+            "references": [],
+            "execution_result": null
+          },
+          {
+            "id": "step-6",
+            "title": "Review and refine strategy",
             "step_type": "REVIEW",
-            "expected_outcome": "Provide talking points and budget summary for leadership sign-off",
+            "expected_outcome": "Assess pilot results and make necessary adjustments to the deployment strategy before full rollout.",
             "status": "PENDING",
             "notes": [],
             "references": [],
             "execution_result": null
           }
         ],
+        "assumptions": [
+          "Mid-size retail chains have the necessary infrastructure to support Edge AI.",
+          "Stakeholders are open to adopting new technologies.",
+          "There is a budget allocated for technology upgrades."
+        ],
+        "risks": [
+          "Potential resistance from staff to new technology.",
+          "Vendor reliability and support issues.",
+          "Data privacy and security concerns."
+        ],
         "metadata": {
           "locale": "en-US",
-          "budget_tokens": 12000,
-          "budget_cost_usd": 4.0,
-          "reviewer": null
+          "reviewer": null,
+          "budget_tokens": 5000,
+          "budget_cost_usd": 25000.0
         }
       }
     },
@@ -146,21 +170,13 @@
       "locale": "en-US",
       "plan": {
         "topic": "Kubernetes cost optimization for multi-tenant SaaS",
-        "goal": "Identify actionable levers to reduce infrastructure spend without impacting tenant isolation.",
-        "assumptions": [
-          "Workloads run on managed Kubernetes in multiple regions",
-          "Observability stack is available for cost attribution"
-        ],
-        "risks": [
-          "Aggressive right-sizing may impact performance",
-          "Cluster autoscaler misconfiguration"
-        ],
+        "goal": "Develop actionable steps for monitoring, autoscaling, and workload isolation in Kubernetes to optimize costs.",
         "steps": [
           {
             "id": "step-1",
-            "title": "Audit baseline resource consumption",
+            "title": "Implement Monitoring Tools",
             "step_type": "RESEARCH",
-            "expected_outcome": "Gather current spend by namespace and workload class",
+            "expected_outcome": "Identify and set up effective monitoring tools to track resource usage and costs.",
             "status": "PENDING",
             "notes": [],
             "references": [],
@@ -168,9 +184,9 @@
           },
           {
             "id": "step-2",
-            "title": "Evaluate optimization levers",
+            "title": "Configure Autoscaling Policies",
             "step_type": "PROCESS",
-            "expected_outcome": "Summarize impact of autoscaling, bin packing, and spot node pools",
+            "expected_outcome": "Establish autoscaling policies based on workload patterns to optimize resource allocation.",
             "status": "PENDING",
             "notes": [],
             "references": [],
@@ -178,9 +194,9 @@
           },
           {
             "id": "step-3",
-            "title": "Draft phased optimization roadmap",
-            "step_type": "SYNTHESIZE",
-            "expected_outcome": "Outline quick wins vs. longer-term platform changes",
+            "title": "Establish Workload Isolation Strategies",
+            "step_type": "PROCESS",
+            "expected_outcome": "Define strategies for isolating workloads to prevent resource contention among tenants.",
             "status": "PENDING",
             "notes": [],
             "references": [],
@@ -188,20 +204,40 @@
           },
           {
             "id": "step-4",
-            "title": "Define monitoring and rollback guardrails",
+            "title": "Review Cost Reports Regularly",
             "step_type": "REVIEW",
-            "expected_outcome": "List KPIs, alert thresholds, and rollback criteria for stakeholder approval",
+            "expected_outcome": "Create a schedule for reviewing cost reports to identify areas for further optimization.",
+            "status": "PENDING",
+            "notes": [],
+            "references": [],
+            "execution_result": null
+          },
+          {
+            "id": "step-5",
+            "title": "Synthesize Findings and Recommendations",
+            "step_type": "SYNTHESIZE",
+            "expected_outcome": "Compile findings from monitoring and reviews into actionable recommendations for ongoing cost optimization.",
             "status": "PENDING",
             "notes": [],
             "references": [],
             "execution_result": null
           }
         ],
+        "assumptions": [
+          "The Kubernetes cluster is already set up and running.",
+          "There are multiple tenants using the SaaS application.",
+          "Cost optimization is a priority for the organization."
+        ],
+        "risks": [
+          "Improper configuration may lead to resource wastage.",
+          "Monitoring tools may not provide accurate data.",
+          "Autoscaling may not respond quickly enough to workload changes."
+        ],
         "metadata": {
           "locale": "en-US",
-          "budget_tokens": 9000,
-          "budget_cost_usd": 3.0,
-          "reviewer": null
+          "reviewer": null,
+          "budget_tokens": 500,
+          "budget_cost_usd": 1500.0
         }
       }
     }
