@@ -43,6 +43,7 @@ class PlannerAgentTests(unittest.TestCase):
 
     @patch("src.agents.planner.call_llm")
     def test_generate_plan_invalid_json(self, mock_call_llm) -> None:
+        # Intentionally feed malformed payload to exercise the validation failure path.
         mock_call_llm.return_value = "not-json"
 
         with self.assertRaises(ValidationError):
