@@ -25,11 +25,15 @@
 - 新增 `scripts/validate_planner.py`，落地 LLM 调用 + `Plan` 验证闭环，并提供示例输出。
 - 实现 Reporter 端笔记校验原型（`src/report/validation.py` + 单测），覆盖引用与置信度提示。
 - 补充人在环 CLI 流程文档与入口提示（`docs/human-review-cli.md`、`scripts/run_cli.py --show-review-help`）。
+- 修复 Planner CLI 持久化缺失依赖问题，统一审阅指令枚举并补充 `_store_plan` 单测，保证日志可写。
+- 设计 Planner 运行记录 schema，新增 `PlanRunRecord` 模型、校验与回放脚本，并提供样例 JSON 输出。
+- 梳理 Planner 审阅日志持久化与工具脚本的实现，确认 CLI 测试覆盖与示例输出结构。
 
 ## 主题与目标
 - 当前示例练习：LangGraph 深度调研代理最佳实践（可替换为其他问题）。
 - 长期目标：构建可复用的 Deep Research 工具链，支持多种调研场景的闭环执行。
 
 ## 下一步
-- 设计计划持久化格式的审阅记录结构（含 JSONL schema 校验与回放脚本）。
+- 将审阅日志校验脚本集成到自动化流程（pytest/CI 或 Make 任务），确保格式回归可控。
 - 开始规划 Researcher 节点接口，确保 Stage 2 可直接接入 LangGraph 状态。
+- 评估 reporter 占位输出与审阅日志的联动需求，为后续报告生成提前预留字段。

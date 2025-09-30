@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Tuple
 
@@ -12,6 +13,7 @@ from src.agents.planner import PlannerAgent
 from src.config.configuration import load_config
 from src.graph.builder import build_graph, initial_state
 from src.models.plan import Plan
+from src.models.persistence import PlanRunRecord, ReviewAction, ReviewLogEntry
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 PLANS_DIR = PROJECT_ROOT / "output" / "plans"
@@ -37,7 +39,7 @@ def main(argv: List[str] | None = None) -> None:
 
     planner_agent = PlannerAgent(config)
     attempts = {"count": 0}
-    review_log: List[Dict[str, str]] = []
+    review_log: List[ReviewLogEntry] = []
     current_context = {"value": context}
 
     def review_handler(state) -> tuple[str, str]:
@@ -52,23 +54,23 @@ def main(argv: List[str] | None = None) -> None:
 
         _display_plan(plan_obj)
         if args.auto_accept:
-            action, feedback = "ACCEPT_PLAN", ""
+            action_enum, feedback = ReviewAction.ACCEPT_PLAN, ""
         else:
-            action, feedback = _prompt_review_action()
+            action_enum, feedback = _prompt_review_action()
 
         review_log.append(
-            {
-                "attempt": str(attempts["count"]),
-                "action": action,
-                "feedback": feedback,
-            }
+            ReviewLogEntry(
+                attempt=attempts["count"],
+                action=action_enum,
+                feedback=feedback,
+            )
         )
 
-        if action == "REQUEST_CHANGES" and feedback:
+        if action_enum is ReviewAction.REQUEST_CHANGES and feedback:
             current_context["value"] = _merge_context(current_context["value"], feedback)
             state.metadata["context"] = current_context["value"]
 
-        return action, feedback
+        return action_enum.value, feedback
 
     graph = build_graph(
         config,
@@ -137,11 +139,17 @@ def _display_plan(plan: Plan) -> None:
         print(f"     Expected outcome: {step.expected_outcome}")
 
 
-def _prompt_review_action() -> Tuple[str, str]:
+def _prompt_review_action() -> Tuple[ReviewAction, str]:
     prompt = "Select action [ACCEPT_PLAN | REQUEST_CHANGES | ABORT]: "
-    action = input(prompt).strip().upper()
+    lookup = {choice.value: choice for choice in ReviewAction}
+    action_text = input(prompt).strip().upper()
+    while action_text not in lookup:
+        print("[warn] Invalid action. Please choose ACCEPT_PLAN, REQUEST_CHANGES, or ABORT.")
+        action_text = input(prompt).strip().upper()
+
+    action = lookup[action_text]
     feedback = ""
-    if action == "REQUEST_CHANGES":
+    if action is ReviewAction.REQUEST_CHANGES:
         print("Enter feedback (finish with empty line):")
         lines = []
         while True:
@@ -173,25 +181,20 @@ def _store_plan(
     locale: str,
     context: str,
     plan: Plan,
-    review_log: List[Dict[str, str]],
+    review_log: List[ReviewLogEntry],
 ) -> None:
     PLANS_DIR.mkdir(parents=True, exist_ok=True)
-    record = {
-        "timestamp": datetime.utcnow().isoformat() + "Z",
-        "question": question,
-        "locale": locale,
-        "context": context,
-        "plan": plan.model_dump(),
-        "review_log": review_log,
-    }
+    record = PlanRunRecord(
+        timestamp=datetime.utcnow(),
+        question=question,
+        locale=locale,
+        context=context,
+        plan=plan,
+        review_log=review_log,
+    )
     path = PLANS_DIR / "plans.jsonl"
     with path.open("a", encoding="utf-8") as handle:
-        handle.write(json.dumps(record, ensure_ascii=False) + "\n")
-
-
-if __name__ == "__main__":
-    main()
-
-
+        payload = json.dumps(record.model_dump(mode="json"), ensure_ascii=False)
+        handle.write(payload + "\n")
 if __name__ == "__main__":
     main()

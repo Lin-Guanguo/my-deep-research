@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import tempfile
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
-from src.models.plan import Plan
 from src.graph.state import GraphState
+from src.models.plan import Plan
+from src.models.persistence import PlanRunRecord, ReviewAction, ReviewLogEntry
 
 
 class CliTests(unittest.TestCase):
@@ -67,6 +70,53 @@ class CliTests(unittest.TestCase):
         mock_summary.assert_called_once()
         mock_store.assert_not_called()
         assert captured_handler["handler"] is not None
+
+    def test_store_plan_persists_record(self) -> None:
+        from scripts import run_cli
+
+        plan = Plan(
+            topic="Persist Test",
+            goal="Ensure persistence",
+            steps=[
+                {
+                    "id": "step-1",
+                    "title": "Verify",
+                    "step_type": "RESEARCH",
+                    "expected_outcome": "validation",
+                }
+            ],
+            assumptions=[],
+            risks=[],
+        )
+
+        review_entries = [
+            ReviewLogEntry(attempt=1, action=ReviewAction.ACCEPT_PLAN, feedback="")
+        ]
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp_path = Path(tmpdir)
+            original_dir = run_cli.PLANS_DIR
+            run_cli.PLANS_DIR = tmp_path
+            try:
+                run_cli._store_plan(
+                    question="What is LangGraph?",
+                    locale="en-US",
+                    context="",
+                    plan=plan,
+                    review_log=review_entries,
+                )
+            finally:
+                run_cli.PLANS_DIR = original_dir
+
+            output_path = tmp_path / "plans.jsonl"
+            self.assertTrue(output_path.exists())
+
+            content = output_path.read_text(encoding="utf-8").strip().splitlines()
+            self.assertEqual(len(content), 1)
+            record = PlanRunRecord.model_validate_json(content[0])
+            self.assertEqual(record.question, "What is LangGraph?")
+            self.assertEqual(record.locale, "en-US")
+            self.assertEqual(record.review_log[0].action, ReviewAction.ACCEPT_PLAN)
 
 
 if __name__ == "__main__":

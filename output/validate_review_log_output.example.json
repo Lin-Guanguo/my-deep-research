@@ -1,0 +1,7 @@
+{
+  "log_path": "samples/plan_run_record.jsonl",
+  "total": 1,
+  "valid": 1,
+  "invalid": [],
+  "missing_file": false
+}
