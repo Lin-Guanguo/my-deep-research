@@ -27,6 +27,7 @@
 
 - `scripts/validate_review_log.py`：逐行校验 JSONL 是否符合 `PlanRunRecord` schema，并输出统计到 `output/validate_review_log_output.json`。
 - `scripts/replay_review_log.py`：读取 JSONL 并生成指定索引的计划与审阅摘要，输出到 `output/replay_review_log_output.json`。
+- `tests/test_review_log_tools.py`：在 pytest 测试中调用上述脚本，确保示例日志始终符合 schema 并可回放。
 
 提供了对应的 `.example.json` 参考输出，便于比对格式和字段。
 
