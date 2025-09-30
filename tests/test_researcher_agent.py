@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import unittest
 
-from src.agents.researcher import ResearcherAgent, ResearcherError
+from src.agents.researcher import ResearchContext, ResearcherAgent, ResearcherError
 from src.config.configuration import AppConfig, ApiConfig
 from src.models.plan import PlanStep
 
@@ -50,7 +50,15 @@ class ResearcherAgentTests(unittest.TestCase):
             expected_outcome="Summarize LangGraph capabilities",
         )
 
-        result = agent.run_step(topic="LangGraph best practices", step=step, locale="en-US")
+        context = ResearchContext(
+            topic="LangGraph best practices",
+            locale="en-US",
+            step=step,
+            max_results=agent._config.search.max_queries,
+            timeout_seconds=agent._config.search.timeout_seconds,
+        )
+
+        result = agent.run_step(context)
 
         self.assertEqual(result.query, "LangGraph best practices | Discover LangGraph | en-US")
         self.assertEqual(len(result.notes), 1)
@@ -74,7 +82,15 @@ class ResearcherAgentTests(unittest.TestCase):
         )
 
         with self.assertRaises(ResearcherError):
-            agent.run_step(topic="Topic", step=step, locale="en-US")
+            agent.run_step(
+                ResearchContext(
+                    topic="Topic",
+                    locale="en-US",
+                    step=step,
+                    max_results=1,
+                    timeout_seconds=5.0,
+                )
+            )
 
     def test_no_results_raises(self) -> None:
         config = self._make_config(tavily_key="tvly")
@@ -88,7 +104,15 @@ class ResearcherAgentTests(unittest.TestCase):
         )
 
         with self.assertRaises(ResearcherError):
-            agent.run_step(topic="Topic", step=step, locale="en-US")
+            agent.run_step(
+                ResearchContext(
+                    topic="Topic",
+                    locale="en-US",
+                    step=step,
+                    max_results=2,
+                    timeout_seconds=5.0,
+                )
+            )
 
     def test_multiple_results_returns_limited_notes(self) -> None:
         config = self._make_config(tavily_key="tvly")
@@ -112,11 +136,53 @@ class ResearcherAgentTests(unittest.TestCase):
             expected_outcome="List actionable guidance",
         )
 
-        result = agent.run_step(topic="LangGraph", step=step, locale="en-US")
+        result = agent.run_step(
+            ResearchContext(
+                topic="LangGraph",
+                locale="en-US",
+                step=step,
+                max_results=agent._config.search.max_queries,
+                timeout_seconds=agent._config.search.timeout_seconds,
+            )
+        )
 
         self.assertLessEqual(len(result.notes), 3)
         self.assertEqual(len(result.notes), len(result.references))
         self.assertTrue(all(note.confidence and note.confidence >= 0.6 for note in result.notes))
+
+    def test_max_notes_override_limits_output(self) -> None:
+        config = self._make_config(tavily_key="tvly")
+
+        def fake_search(*args, **kwargs):
+            return [
+                {
+                    "title": f"Result {idx}",
+                    "url": f"https://example.com/result-{idx}",
+                    "snippet": "Details",
+                }
+                for idx in range(5)
+            ]
+
+        agent = ResearcherAgent(config, search_callable=fake_search)
+
+        step = PlanStep(
+            id="step-3",
+            title="Collect references",
+            step_type="RESEARCH",
+            expected_outcome="Obtain citations",
+        )
+
+        context = ResearchContext(
+            topic="LangGraph",
+            locale="en-US",
+            step=step,
+            max_results=5,
+            timeout_seconds=agent._config.search.timeout_seconds,
+            max_notes=2,
+        )
+
+        result = agent.run_step(context)
+        self.assertEqual(len(result.notes), 2)
 
 
 if __name__ == "__main__":

@@ -29,10 +29,10 @@
 4. 需要哪些遥测数据（调用时长、Token 耗费）写入 `PlanRunRecord` 或独立日志？
 
 ## Current Prototype
-- `ResearcherAgent.run_step` 根据 Plan 步骤构造 Tavily 查询，筛选去重后的多条结果生成带置信度的 `ResearchNote`。
+- `ResearchContext` 聚合 topic/locale/步骤与 Tavily 配额，`ResearcherAgent.run_step` 直接消费该上下文并生成多条带置信度的 `ResearchNote`。
 - LangGraph `researcher` 节点会更新步骤状态、写入 `scratchpad`，并记录查询耗时、笔记数等遥测数据供 Reporter/审计复用。
 
 ## Next Steps
-- 定义 `ResearchContext` 数据类，封装 locale、预算、工具配置，降低函数签名复杂度。
-- 扩展 Tavily 结果整合策略（多条笔记、去重及置信度评分），与 Reporter 输出格式对齐。
-- 与 Reporter 节点的模板对齐，确认需要的 note 字段（证据、摘要、置信度等）。
+- 拓展 `ResearchContext` 支持工具降级策略、预算余量等参数，并与 LangGraph metadata 同步。
+- 设计 Researcher 与 Reporter 的数据交互接口（含置信度、低信号提示），推动 Markdown 渲染落地。
+- 规划 Researcher/Planner 调用成本、搜索结果量等更多遥测字段，完善运行记录。

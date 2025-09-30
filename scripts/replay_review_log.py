@@ -91,12 +91,14 @@ def replay_log(
                 "total_calls": metrics.total_calls,
                 "total_notes": metrics.total_notes,
                 "total_duration_seconds": metrics.total_duration_seconds,
+                "total_results": metrics.total_results,
                 "calls": [
                     {
                         "step_id": call.step_id,
                         "query": call.query,
                         "note_count": call.note_count,
                         "duration_seconds": call.duration_seconds,
+                        "result_count": call.result_count,
                     }
                     for call in metrics.calls
                 ],

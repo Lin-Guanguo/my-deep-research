@@ -8,11 +8,16 @@ from typing import Any, Callable, Dict, Tuple
 from langgraph.graph import END, START, StateGraph
 
 from src.agents.planner import PlannerAgent
-from src.agents.researcher import ResearcherAgent, ResearcherError, ResearcherResult
+from src.agents.researcher import (
+    ResearchContext,
+    ResearcherAgent,
+    ResearcherError,
+    ResearcherResult,
+)
 from src.config.configuration import AppConfig
 
 from .state import GraphState
-from src.models.plan import Plan, PlanStep, StepStatus
+from src.models.plan import Plan, PlanStep, ResearchNote, StepStatus
 
 # Ordered tuple describing the canonical node pipeline of the research agent.
 STANDARD_NODES: Tuple[str, ...] = (
@@ -112,12 +117,16 @@ def build_graph(
         current.current_step_id = step.id
         current.plan.mark_step_status(step.id, StepStatus.IN_PROGRESS)
 
+        context = ResearchContext(
+            topic=current.topic,
+            locale=current.locale or configuration.runtime.locale,
+            step=step,
+            max_results=configuration.search.max_queries,
+            timeout_seconds=configuration.search.timeout_seconds,
+        )
+
         try:
-            result = researcher.run_step(
-                topic=current.topic,
-                step=step,
-                locale=current.locale or configuration.runtime.locale,
-            )
+            result = researcher.run_step(context)
         except ResearcherError as exc:
             current.plan.mark_step_status(step.id, StepStatus.BLOCKED)
             current.metadata.setdefault("researcher_errors", []).append(str(exc))
@@ -144,6 +153,7 @@ def build_graph(
     def _reporter(state: GraphState | Dict[str, Any]) -> Dict[str, Any]:
         current = _ensure_state(state)
         current.metadata.setdefault("reporter_placeholder", True)
+        current.metadata["reporter_summary"] = _build_reporter_summary(current)
         return current.model_dump()
 
     graph.add_node("coordinator", _coordinator)
@@ -238,12 +248,53 @@ def _apply_research_results(
         state.add_scratchpad_note(note)
 
 
+def _build_reporter_summary(state: GraphState) -> Dict[str, Any]:
+    plan = state.plan
+    if plan is None:
+        return {
+            "total_notes": 0,
+            "average_confidence": None,
+            "low_confidence": [],
+            "researcher_metrics": state.metadata.get("researcher_metrics"),
+        }
+
+    note_entries: List[tuple[str, ResearchNote]] = []
+    for step in plan.steps:
+        for note in step.notes:
+            note_entries.append((step.id, note))
+
+    total_notes = len(note_entries)
+    confidences = [note.confidence for _, note in note_entries if note.confidence is not None]
+    average_confidence = (
+        sum(confidences) / len(confidences) if confidences else None
+    )
+
+    low_confidence = [
+        {
+            "step_id": step_id,
+            "claim": note.claim,
+            "confidence": note.confidence,
+        }
+        for step_id, note in note_entries
+        if note.confidence is not None and note.confidence < 0.6
+    ]
+
+    summary = {
+        "total_notes": total_notes,
+        "average_confidence": average_confidence,
+        "low_confidence": low_confidence,
+        "researcher_metrics": state.metadata.get("researcher_metrics"),
+    }
+    return summary
+
+
 def _update_researcher_metrics(
     state: GraphState, step: PlanStep, result: ResearcherResult
 ) -> None:
     metrics = state.metadata.get("researcher_metrics") or {
         "total_calls": 0,
         "total_notes": 0,
+        "total_results": None,
         "total_duration_seconds": None,
         "calls": [],
     }
@@ -256,12 +307,18 @@ def _update_researcher_metrics(
         previous = metrics.get("total_duration_seconds") or 0.0
         metrics["total_duration_seconds"] = float(previous) + duration
 
+    result_count = result.total_results
+    if result_count:
+        previous_results = metrics.get("total_results") or 0
+        metrics["total_results"] = int(previous_results) + result_count
+
     metrics.setdefault("calls", []).append(
         {
             "step_id": step.id,
             "query": result.query,
             "note_count": len(result.notes),
             "duration_seconds": duration,
+            "result_count": result_count,
         }
     )
 

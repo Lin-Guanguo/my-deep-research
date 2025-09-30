@@ -43,6 +43,9 @@ class ResearcherCallLog(BaseModel):
     duration_seconds: Optional[float] = Field(
         default=None, ge=0.0, description="Wall-clock duration for the research call"
     )
+    result_count: Optional[int] = Field(
+        default=None, ge=0, description="Total Tavily results returned for the query"
+    )
 
 
 class ResearcherMetrics(BaseModel):
@@ -52,6 +55,9 @@ class ResearcherMetrics(BaseModel):
     total_notes: int = Field(..., ge=0, description="Total notes captured across all steps")
     total_duration_seconds: Optional[float] = Field(
         default=None, ge=0.0, description="Aggregated researcher runtime in seconds"
+    )
+    total_results: Optional[int] = Field(
+        default=None, ge=0, description="Total Tavily results retrieved across calls"
     )
     calls: List[ResearcherCallLog] = Field(
         default_factory=list, description="Per-step researcher execution logs"

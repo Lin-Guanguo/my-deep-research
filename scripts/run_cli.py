@@ -243,12 +243,19 @@ def _coerce_metrics(payload: Dict[str, Any]) -> ResearcherMetrics:
                 duration = float(duration)
             except (TypeError, ValueError):
                 duration = None
+        result_count = call.get("result_count")
+        if result_count is not None:
+            try:
+                result_count = int(result_count)
+            except (TypeError, ValueError):
+                result_count = None
         coerced_calls.append(
             ResearcherCallLog(
                 step_id=step_id,
                 query=query,
                 note_count=note_count,
                 duration_seconds=duration,
+                result_count=result_count,
             )
         )
 
@@ -261,10 +268,18 @@ def _coerce_metrics(payload: Dict[str, Any]) -> ResearcherMetrics:
         except (TypeError, ValueError):
             total_duration = None
 
+    total_results = payload.get("total_results")
+    if total_results is not None:
+        try:
+            total_results = int(total_results)
+        except (TypeError, ValueError):
+            total_results = None
+
     return ResearcherMetrics(
         total_calls=total_calls,
         total_notes=total_notes,
         total_duration_seconds=total_duration,
+        total_results=total_results,
         calls=coerced_calls,
     )
 if __name__ == "__main__":

@@ -32,5 +32,7 @@ def test_replay_log_on_sample(tmp_path) -> None:
     assert summary["selected_index"] == 0
     assert record is not None
     assert record["question"].startswith("LangGraph")
-    assert record.get("researcher_metrics", {}).get("total_calls") == 2
+    metrics = record.get("researcher_metrics", {})
+    assert metrics.get("total_calls") == 2
+    assert metrics.get("total_results") == 5
     assert result["output_path"].exists()

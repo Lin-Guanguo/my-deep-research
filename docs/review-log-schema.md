@@ -12,7 +12,7 @@
 - `context` (`string`): 传递给 Planner 的额外提示或审阅反馈合并文本。
 - `plan` (`Plan`): 通过 `src/models/plan.py` 定义的结构化计划，包含 `steps`、`assumptions`、`risks` 等字段。
 - `review_log` (`ReviewLogEntry[]`): 按时间顺序记录人在环决策。
-- `telemetry` (`RunTelemetry`): 可选的运行遥测信息，目前包含 Researcher 调用次数、耗时、笔记数量等统计。
+- `telemetry` (`RunTelemetry`): 可选的运行遥测信息，目前包含 Researcher 调用次数、耗时、笔记数量、搜索返回数量等统计。
 
 ### ReviewLogEntry
 
@@ -64,9 +64,10 @@
       "total_calls": 2,
       "total_notes": 3,
       "total_duration_seconds": 1.25,
+      "total_results": 5,
       "calls": [
-        {"step_id": "step-1", "query": "LangGraph 深度调研代理最佳实践 | 梳理官方文档 | zh-CN", "note_count": 2, "duration_seconds": 0.72},
-        {"step_id": "step-2", "query": "LangGraph 深度调研代理最佳实践 | 整理社区范例 | zh-CN", "note_count": 1, "duration_seconds": 0.53}
+        {"step_id": "step-1", "query": "LangGraph 深度调研代理最佳实践 | 梳理官方文档 | zh-CN", "note_count": 2, "duration_seconds": 0.72, "result_count": 3},
+        {"step_id": "step-2", "query": "LangGraph 深度调研代理最佳实践 | 整理社区范例 | zh-CN", "note_count": 1, "duration_seconds": 0.53, "result_count": 2}
       ]
     }
   }

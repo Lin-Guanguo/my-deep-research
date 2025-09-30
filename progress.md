@@ -32,12 +32,13 @@
 - 新增 Researcher 节点接口大纲，为 Stage 2 定义输入输出与开放问题。
 - 实现最小 Researcher 节点原型，串联 Tavily 查询→ResearchNote→scratchpad，完成 LangGraph Stage 1 端到端闭环。
 - 扩展 ResearcherAgent 支持多结果聚合与置信度估计，并将耗时/笔记统计写入计划遥测。
+- 引入 ResearchContext 抽象、Reporter 摘要与研究遥测整合，完成 Stage 1 全链路观测，并刷新文档/示例。
 
 ## 主题与目标
 - 当前示例练习：LangGraph 深度调研代理最佳实践（可替换为其他问题）。
 - 长期目标：构建可复用的 Deep Research 工具链，支持多种调研场景的闭环执行。
 
 ## 下一步
-- 引入 ResearchContext 抽象与工具调用配额策略，进一步细化 Researcher 节点参数管理。
-- 在 Reporter 流程中消费新的 ResearchNote 置信度与遥测，完善报告生成逻辑。
-- 扩展 PlanRunRecord 遥测，评估是否记录 LLM 成本、搜索次数等更多指标。
+- 深入设计 ResearchContext 扩展字段（工具降级策略、预算消耗）并与 LangGraph 状态同步。
+- 在 Reporter 渲染模块消费遥测与置信度，生成最小 Markdown 输出草稿。
+- 规划 Planner/Researcher LLM 调用成本记录方案，补全 PlanRunRecord 遥测字段。

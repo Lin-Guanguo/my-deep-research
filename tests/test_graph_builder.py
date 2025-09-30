@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import unittest
 
-from src.agents.researcher import ResearcherResult
+from src.agents.researcher import ResearchContext, ResearcherResult
 from src.config.configuration import AppConfig
 from src.graph.builder import build_graph, initial_state
 from src.models.plan import Plan, ResearchNote, StepStatus
@@ -22,10 +22,13 @@ class DummyPlanner:
 
 class DummyResearcher:
     def __init__(self) -> None:
-        self.calls: list[tuple[str, str, str]] = []
+        self.calls: list[ResearchContext] = []
 
-    def run_step(self, *, topic: str, step, locale: str) -> ResearcherResult:  # noqa: ANN001
-        self.calls.append((topic, step.id, locale))
+    def run_step(self, context: ResearchContext) -> ResearcherResult:  # noqa: ANN001
+        self.calls.append(context)
+        step = context.step
+        topic = context.topic
+        locale = context.locale
         note = ResearchNote(
             source="https://example.com",
             claim=f"Insight for {step.title}",
@@ -78,7 +81,11 @@ class GraphBuilderTests(unittest.TestCase):
         self.assertEqual(result["plan"]["topic"], "Test")
         self.assertEqual(result["metadata"]["last_review_action"], "ACCEPT_PLAN")
         self.assertEqual(dummy_planner.calls, [("Test Topic", "en-US", "ctx")])
-        self.assertEqual(dummy_researcher.calls, [("Test Topic", "step-1", "en-US")])
+        self.assertEqual(len(dummy_researcher.calls), 1)
+        context = dummy_researcher.calls[0]
+        self.assertEqual(context.topic, "Test Topic")
+        self.assertEqual(context.step.id, "step-1")
+        self.assertEqual(context.locale, "en-US")
         self.assertEqual(
             result["plan"]["steps"][0]["status"],
             StepStatus.COMPLETED.value,
@@ -87,6 +94,9 @@ class GraphBuilderTests(unittest.TestCase):
         self.assertIsNotNone(metrics)
         self.assertEqual(metrics["total_calls"], 1)
         self.assertEqual(metrics["total_notes"], 1)
+        summary = result["metadata"].get("reporter_summary")
+        self.assertIsNotNone(summary)
+        self.assertEqual(summary["total_notes"], 1)
 
     def test_request_changes_loops_back_to_planner(self) -> None:
         cfg = AppConfig()
@@ -151,9 +161,11 @@ class GraphBuilderTests(unittest.TestCase):
         self.assertEqual(dummy_planner.calls, [("Topic", "en-US", "ctx"), ("Topic", "en-US", "ctx\nReviewer feedback: Add more detail")])
         self.assertEqual(result["plan"]["topic"], "Second")
         self.assertEqual(result["metadata"].get("last_review_action"), "ACCEPT_PLAN")
-        self.assertEqual(dummy_researcher.calls[0][0], "Topic")
+        self.assertEqual(dummy_researcher.calls[0].topic, "Topic")
         metrics = result["metadata"].get("researcher_metrics")
         self.assertEqual(metrics["total_calls"], 1)
+        summary = result["metadata"].get("reporter_summary")
+        self.assertEqual(summary["total_notes"], 1)
 
 
 if __name__ == "__main__":
