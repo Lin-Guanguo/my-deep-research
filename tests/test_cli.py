@@ -123,6 +123,7 @@ class CliTests(unittest.TestCase):
             self.assertEqual(record.question, "What is LangGraph?")
             self.assertEqual(record.locale, "en-US")
             self.assertEqual(record.review_log[0].action, ReviewAction.ACCEPT_PLAN)
+            self.assertIsNone(record.telemetry)
 
 
 if __name__ == "__main__":

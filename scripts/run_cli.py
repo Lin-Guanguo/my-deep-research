@@ -7,14 +7,23 @@ import json
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Any, Dict, List, Tuple
+
+from pydantic import ValidationError
 
 from src.agents.planner import PlannerAgent
 from src.agents.researcher import ResearcherAgent
 from src.config.configuration import load_config
 from src.graph.builder import build_graph, initial_state
 from src.models.plan import Plan
-from src.models.persistence import PlanRunRecord, ReviewAction, ReviewLogEntry
+from src.models.persistence import (
+    PlanRunRecord,
+    ResearcherCallLog,
+    ResearcherMetrics,
+    ReviewAction,
+    ReviewLogEntry,
+    RunTelemetry,
+)
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 PLANS_DIR = PROJECT_ROOT / "output" / "plans"
@@ -88,7 +97,8 @@ def main(argv: List[str] | None = None) -> None:
     )
     result = graph.invoke(initial.model_dump())
     final_state = Plan.model_validate(result["plan"]) if result.get("plan") else None
-    last_action = result.get("metadata", {}).get("last_review_action", "ACCEPT_PLAN")
+    metadata = result.get("metadata", {})
+    last_action = metadata.get("last_review_action", "ACCEPT_PLAN")
 
     if last_action == "ABORT" or final_state is None:
         print("[info] Workflow aborted by reviewer.")
@@ -102,6 +112,7 @@ def main(argv: List[str] | None = None) -> None:
             context=current_context["value"],
             plan=final_state,
             review_log=review_log,
+            telemetry=_extract_telemetry(metadata),
         )
 
 
@@ -185,6 +196,7 @@ def _store_plan(
     context: str,
     plan: Plan,
     review_log: List[ReviewLogEntry],
+    telemetry: RunTelemetry | None = None,
 ) -> None:
     PLANS_DIR.mkdir(parents=True, exist_ok=True)
     record = PlanRunRecord(
@@ -194,10 +206,66 @@ def _store_plan(
         context=context,
         plan=plan,
         review_log=review_log,
+        telemetry=telemetry,
     )
     path = PLANS_DIR / "plans.jsonl"
     with path.open("a", encoding="utf-8") as handle:
         payload = json.dumps(record.model_dump(mode="json"), ensure_ascii=False)
         handle.write(payload + "\n")
+
+
+def _extract_telemetry(metadata: Dict[str, Any]) -> RunTelemetry | None:
+    metrics_payload = metadata.get("researcher_metrics")
+    if not metrics_payload:
+        return None
+
+    try:
+        researcher_metrics = ResearcherMetrics.model_validate(metrics_payload)
+    except ValidationError:
+        researcher_metrics = _coerce_metrics(metrics_payload)
+    return RunTelemetry(researcher=researcher_metrics)
+
+
+def _coerce_metrics(payload: Dict[str, Any]) -> ResearcherMetrics:
+    calls_payload = payload.get("calls", []) or []
+    coerced_calls: List[ResearcherCallLog] = []
+    for call in calls_payload:
+        if not isinstance(call, dict):
+            continue
+        step_id = str(call.get("step_id", "")).strip()
+        if not step_id:
+            continue
+        query = str(call.get("query", "")).strip()
+        note_count = int(call.get("note_count", 0) or 0)
+        duration = call.get("duration_seconds")
+        if duration is not None:
+            try:
+                duration = float(duration)
+            except (TypeError, ValueError):
+                duration = None
+        coerced_calls.append(
+            ResearcherCallLog(
+                step_id=step_id,
+                query=query,
+                note_count=note_count,
+                duration_seconds=duration,
+            )
+        )
+
+    total_calls = int(payload.get("total_calls", len(coerced_calls)) or 0)
+    total_notes = int(payload.get("total_notes", 0) or 0)
+    total_duration = payload.get("total_duration_seconds")
+    if total_duration is not None:
+        try:
+            total_duration = float(total_duration)
+        except (TypeError, ValueError):
+            total_duration = None
+
+    return ResearcherMetrics(
+        total_calls=total_calls,
+        total_notes=total_notes,
+        total_duration_seconds=total_duration,
+        calls=coerced_calls,
+    )
 if __name__ == "__main__":
     main()

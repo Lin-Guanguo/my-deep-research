@@ -85,6 +85,22 @@ def replay_log(
                 for entry in selected_record.review_log
             ],
         }
+        if selected_record.telemetry and selected_record.telemetry.researcher:
+            metrics = selected_record.telemetry.researcher
+            detail["researcher_metrics"] = {
+                "total_calls": metrics.total_calls,
+                "total_notes": metrics.total_notes,
+                "total_duration_seconds": metrics.total_duration_seconds,
+                "calls": [
+                    {
+                        "step_id": call.step_id,
+                        "query": call.query,
+                        "note_count": call.note_count,
+                        "duration_seconds": call.duration_seconds,
+                    }
+                    for call in metrics.calls
+                ],
+            }
 
     summary["selected_record"] = detail
 

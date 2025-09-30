@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import Enum
-from typing import List
+from typing import List, Optional
 
 from pydantic import BaseModel, Field, validator
 
@@ -34,6 +34,38 @@ class ReviewLogEntry(BaseModel):
         return value.strip()
 
 
+class ResearcherCallLog(BaseModel):
+    """Telemetry for a single Researcher execution."""
+
+    step_id: str = Field(..., description="Step identifier associated with the query")
+    query: str = Field(..., description="Concrete Tavily query text")
+    note_count: int = Field(..., ge=0, description="Number of research notes captured")
+    duration_seconds: Optional[float] = Field(
+        default=None, ge=0.0, description="Wall-clock duration for the research call"
+    )
+
+
+class ResearcherMetrics(BaseModel):
+    """Aggregated Researcher telemetry for a run."""
+
+    total_calls: int = Field(..., ge=0, description="Total number of Researcher invocations")
+    total_notes: int = Field(..., ge=0, description="Total notes captured across all steps")
+    total_duration_seconds: Optional[float] = Field(
+        default=None, ge=0.0, description="Aggregated researcher runtime in seconds"
+    )
+    calls: List[ResearcherCallLog] = Field(
+        default_factory=list, description="Per-step researcher execution logs"
+    )
+
+
+class RunTelemetry(BaseModel):
+    """Structured telemetry payload persisted alongside plan runs."""
+
+    researcher: Optional[ResearcherMetrics] = Field(
+        default=None, description="Researcher execution statistics"
+    )
+
+
 class PlanRunRecord(BaseModel):
     """Schema for persisted planner runs and their review history."""
 
@@ -49,8 +81,11 @@ class PlanRunRecord(BaseModel):
         default_factory=list,
         description="Chronological reviewer actions captured during the run",
     )
+    telemetry: Optional[RunTelemetry] = Field(
+        default=None,
+        description="Structured runtime telemetry for downstream analysis",
+    )
 
     @validator("question", "locale", "context")
     def _strip_text(cls, value: str) -> str:
         return value.strip()
-

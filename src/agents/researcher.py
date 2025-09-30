@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Callable, Iterable, List
+from time import perf_counter
+from typing import Callable, Iterable, List, Sequence
 
 from src.config.configuration import AppConfig
 from src.models.plan import PlanStep, ResearchNote
@@ -21,6 +22,8 @@ class ResearcherResult:
     query: str
     notes: List[ResearchNote]
     references: List[str]
+    duration_seconds: float | None = None
+    total_results: int = 0
 
 
 class ResearcherAgent:
@@ -48,33 +51,25 @@ class ResearcherAgent:
         query = self._build_query(topic=topic, step=step, locale=locale)
         search_fn = self._search_callable or _default_search_callable
 
+        started_at = perf_counter()
         try:
             results = search_fn(query, api_key, max_results, timeout)
         except SearchError as exc:
             raise ResearcherError(str(exc)) from exc
+        duration = perf_counter() - started_at
 
-        notes: List[ResearchNote] = []
-        references: List[str] = []
-
-        for item in self._iter_candidates(results):
-            url = item.get("url", "").strip()
-            title = item.get("title", "").strip()
-            snippet = item.get("snippet", "").strip()
-            if not url:
-                continue
-            note = ResearchNote(
-                source=url,
-                claim=title or step.expected_outcome,
-                evidence=snippet or None,
-            )
-            notes.append(note)
-            references.append(url)
-            break  # minimal implementation captures the first useful hit
-
+        max_notes = min(3, max_results)
+        notes, references = self._extract_notes(step, results, max_notes=max_notes)
         if not notes:
             raise ResearcherError("Tavily returned no usable results for this step")
 
-        return ResearcherResult(query=query, notes=notes, references=references)
+        return ResearcherResult(
+            query=query,
+            notes=notes,
+            references=references,
+            duration_seconds=duration,
+            total_results=len(results),
+        )
 
     def _build_query(self, *, topic: str, step: PlanStep, locale: str) -> str:
         components = [topic.strip(), step.title.strip()]
@@ -84,6 +79,62 @@ class ResearcherAgent:
 
     def _iter_candidates(self, results: Iterable[dict]) -> Iterable[dict]:
         return results
+
+    def _extract_notes(
+        self,
+        step: PlanStep,
+        results: Sequence[dict],
+        *,
+        max_notes: int,
+    ) -> tuple[List[ResearchNote], List[str]]:
+        notes: List[ResearchNote] = []
+        references: List[str] = []
+        seen_urls: set[str] = set()
+
+        for item in self._iter_candidates(results):
+            if len(notes) >= max_notes:
+                break
+
+            url = str(item.get("url", "")).strip()
+            title = str(item.get("title", "")).strip()
+            snippet = str(item.get("snippet", "")).strip()
+
+            if not url or url in seen_urls:
+                continue
+
+            seen_urls.add(url)
+            confidence = self._estimate_confidence(step, title=title, snippet=snippet)
+            note = ResearchNote(
+                source=url,
+                claim=title or step.expected_outcome,
+                evidence=snippet or None,
+                confidence=confidence,
+            )
+            notes.append(note)
+            references.append(url)
+
+        return notes, references
+
+    def _estimate_confidence(self, step: PlanStep, *, title: str, snippet: str) -> float:
+        base = 0.6
+        if snippet:
+            base += 0.15
+            if len(snippet) > 120:
+                base += 0.05
+        if title:
+            title_lower = title.lower()
+            keywords = self._keywords_for_step(step)
+            if any(token in title_lower for token in keywords):
+                base += 0.05
+        return max(0.5, min(base, 0.95))
+
+    def _keywords_for_step(self, step: PlanStep) -> List[str]:
+        tokens = []
+        for text in (step.title, step.expected_outcome):
+            if not text:
+                continue
+            tokens.extend(word.lower() for word in text.split() if len(word) > 3)
+        return tokens
 
 
 def _default_search_callable(

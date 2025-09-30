@@ -29,8 +29,8 @@
 4. 需要哪些遥测数据（调用时长、Token 耗费）写入 `PlanRunRecord` 或独立日志？
 
 ## Current Prototype
-- `ResearcherAgent.run_step` 根据 Plan 步骤构造 Tavily 查询，默认取首条有效结果生成 `ResearchNote`。
-- LangGraph `researcher` 节点会更新步骤状态、写入 `scratchpad`，并记录查询元数据供 Reporter/审计复用。
+- `ResearcherAgent.run_step` 根据 Plan 步骤构造 Tavily 查询，筛选去重后的多条结果生成带置信度的 `ResearchNote`。
+- LangGraph `researcher` 节点会更新步骤状态、写入 `scratchpad`，并记录查询耗时、笔记数等遥测数据供 Reporter/审计复用。
 
 ## Next Steps
 - 定义 `ResearchContext` 数据类，封装 locale、预算、工具配置，降低函数签名复杂度。

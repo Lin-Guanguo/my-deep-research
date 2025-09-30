@@ -32,7 +32,12 @@ class ResearcherAgentTests(unittest.TestCase):
                     "title": "LangGraph overview",
                     "url": "https://example.com/langgraph",
                     "snippet": "LangGraph enables orchestrating agents.",
-                }
+                },
+                {
+                    "title": "LangGraph overview",  # duplicate URL should be skipped
+                    "url": "https://example.com/langgraph",
+                    "snippet": "duplicate",
+                },
             ]
 
         config = self._make_config(tavily_key="tvly-key")
@@ -53,6 +58,9 @@ class ResearcherAgentTests(unittest.TestCase):
         self.assertEqual(captured["api_key"], "tvly-key")
         self.assertGreaterEqual(captured["max_results"], 1)
         self.assertGreaterEqual(captured["timeout"], 1.0)
+        self.assertIsNotNone(result.duration_seconds)
+        self.assertGreaterEqual(result.total_results, 1)
+        self.assertGreaterEqual(result.notes[0].confidence or 0.0, 0.6)
 
     def test_missing_api_key_raises(self) -> None:
         config = self._make_config(tavily_key=None)
@@ -81,6 +89,34 @@ class ResearcherAgentTests(unittest.TestCase):
 
         with self.assertRaises(ResearcherError):
             agent.run_step(topic="Topic", step=step, locale="en-US")
+
+    def test_multiple_results_returns_limited_notes(self) -> None:
+        config = self._make_config(tavily_key="tvly")
+
+        def fake_search(*args, **kwargs):
+            return [
+                {
+                    "title": "LangGraph tutorial",
+                    "url": f"https://example.com/item-{idx}",
+                    "snippet": "Detailed walkthrough of LangGraph pipelines.",
+                }
+                for idx in range(10)
+            ]
+
+        agent = ResearcherAgent(config, search_callable=fake_search)
+
+        step = PlanStep(
+            id="step-2",
+            title="Enumerate Best Practices",
+            step_type="RESEARCH",
+            expected_outcome="List actionable guidance",
+        )
+
+        result = agent.run_step(topic="LangGraph", step=step, locale="en-US")
+
+        self.assertLessEqual(len(result.notes), 3)
+        self.assertEqual(len(result.notes), len(result.references))
+        self.assertTrue(all(note.confidence and note.confidence >= 0.6 for note in result.notes))
 
 
 if __name__ == "__main__":

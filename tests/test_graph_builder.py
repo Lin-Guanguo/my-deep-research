@@ -35,6 +35,8 @@ class DummyResearcher:
             query=f"{topic} | {step.title}",
             notes=[note],
             references=[note.source],
+            duration_seconds=0.25,
+            total_results=1,
         )
 
 
@@ -81,6 +83,10 @@ class GraphBuilderTests(unittest.TestCase):
             result["plan"]["steps"][0]["status"],
             StepStatus.COMPLETED.value,
         )
+        metrics = result["metadata"].get("researcher_metrics")
+        self.assertIsNotNone(metrics)
+        self.assertEqual(metrics["total_calls"], 1)
+        self.assertEqual(metrics["total_notes"], 1)
 
     def test_request_changes_loops_back_to_planner(self) -> None:
         cfg = AppConfig()
@@ -146,6 +152,8 @@ class GraphBuilderTests(unittest.TestCase):
         self.assertEqual(result["plan"]["topic"], "Second")
         self.assertEqual(result["metadata"].get("last_review_action"), "ACCEPT_PLAN")
         self.assertEqual(dummy_researcher.calls[0][0], "Topic")
+        metrics = result["metadata"].get("researcher_metrics")
+        self.assertEqual(metrics["total_calls"], 1)
 
 
 if __name__ == "__main__":

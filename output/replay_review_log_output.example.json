@@ -41,6 +41,25 @@
         "action": "ACCEPT_PLAN",
         "feedback": ""
       }
-    ]
+    ],
+    "researcher_metrics": {
+      "total_calls": 2,
+      "total_notes": 3,
+      "total_duration_seconds": 1.25,
+      "calls": [
+        {
+          "step_id": "step-1",
+          "query": "LangGraph 深度调研代理最佳实践 | 梳理官方文档 | zh-CN",
+          "note_count": 2,
+          "duration_seconds": 0.72
+        },
+        {
+          "step_id": "step-2",
+          "query": "LangGraph 深度调研代理最佳实践 | 整理社区范例 | zh-CN",
+          "note_count": 1,
+          "duration_seconds": 0.53
+        }
+      ]
+    }
   }
 }

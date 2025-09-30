@@ -125,6 +125,7 @@ def build_graph(
             return current.model_dump()
 
         _apply_research_results(current, step, result)
+        _update_researcher_metrics(current, step, result)
         current.plan.mark_step_status(step.id, StepStatus.COMPLETED)
         current.metadata.setdefault("researcher_status", "completed_step")
         current.metadata.setdefault("researcher_history", []).append(
@@ -132,6 +133,7 @@ def build_graph(
                 "step_id": step.id,
                 "query": result.query,
                 "note_count": len(result.notes),
+                "duration_seconds": result.duration_seconds,
             }
         )
         current.metadata["researcher_last_query"] = result.query
@@ -234,3 +236,33 @@ def _apply_research_results(
         reference = references[idx] if idx < len(references) else None
         state.plan.append_note(step.id, note, reference=reference)
         state.add_scratchpad_note(note)
+
+
+def _update_researcher_metrics(
+    state: GraphState, step: PlanStep, result: ResearcherResult
+) -> None:
+    metrics = state.metadata.get("researcher_metrics") or {
+        "total_calls": 0,
+        "total_notes": 0,
+        "total_duration_seconds": None,
+        "calls": [],
+    }
+
+    metrics["total_calls"] = metrics.get("total_calls", 0) + 1
+    metrics["total_notes"] = metrics.get("total_notes", 0) + len(result.notes)
+
+    duration = result.duration_seconds
+    if duration is not None:
+        previous = metrics.get("total_duration_seconds") or 0.0
+        metrics["total_duration_seconds"] = float(previous) + duration
+
+    metrics.setdefault("calls", []).append(
+        {
+            "step_id": step.id,
+            "query": result.query,
+            "note_count": len(result.notes),
+            "duration_seconds": duration,
+        }
+    )
+
+    state.metadata["researcher_metrics"] = metrics
