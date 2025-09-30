@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Dict, List, Tuple
 
 from src.agents.planner import PlannerAgent
+from src.agents.researcher import ResearcherAgent
 from src.config.configuration import load_config
 from src.graph.builder import build_graph, initial_state
 from src.models.plan import Plan
@@ -38,6 +39,7 @@ def main(argv: List[str] | None = None) -> None:
     context = args.context or ""
 
     planner_agent = PlannerAgent(config)
+    researcher_agent = ResearcherAgent(config)
     attempts = {"count": 0}
     review_log: List[ReviewLogEntry] = []
     current_context = {"value": context}
@@ -76,6 +78,7 @@ def main(argv: List[str] | None = None) -> None:
         config,
         planner_agent=planner_agent,
         review_handler=review_handler,  # type: ignore[arg-type]
+        researcher_agent=researcher_agent,
     )
 
     initial = initial_state(

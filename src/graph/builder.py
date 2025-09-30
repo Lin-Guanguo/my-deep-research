@@ -8,9 +8,11 @@ from typing import Any, Callable, Dict, Tuple
 from langgraph.graph import END, START, StateGraph
 
 from src.agents.planner import PlannerAgent
+from src.agents.researcher import ResearcherAgent, ResearcherError, ResearcherResult
 from src.config.configuration import AppConfig
 
 from .state import GraphState
+from src.models.plan import Plan, PlanStep, StepStatus
 
 # Ordered tuple describing the canonical node pipeline of the research agent.
 STANDARD_NODES: Tuple[str, ...] = (
@@ -35,10 +37,12 @@ def build_graph(
     *,
     planner_agent: PlannerAgent | None = None,
     review_handler: ReviewHandler | None = None,
+    researcher_agent: ResearcherAgent | None = None,
 ) -> Any:
     """Construct the LangGraph state machine for coordinator→planner→human_review→reporter."""
 
     agent = planner_agent or PlannerAgent(configuration)
+    researcher = researcher_agent or ResearcherAgent(configuration)
     handler = review_handler or _default_review_handler
     graph = StateGraph(GraphState)
 
@@ -93,6 +97,48 @@ def build_graph(
 
         return current.model_dump()
 
+    def _researcher(state: GraphState | Dict[str, Any]) -> Dict[str, Any]:
+        current = _ensure_state(state)
+
+        if current.plan is None:
+            current.metadata.setdefault("researcher_status", "missing_plan")
+            return current.model_dump()
+
+        step = _select_next_step(current.plan, current.current_step_id)
+        if step is None:
+            current.metadata.setdefault("researcher_status", "no_pending_steps")
+            return current.model_dump()
+
+        current.current_step_id = step.id
+        current.plan.mark_step_status(step.id, StepStatus.IN_PROGRESS)
+
+        try:
+            result = researcher.run_step(
+                topic=current.topic,
+                step=step,
+                locale=current.locale or configuration.runtime.locale,
+            )
+        except ResearcherError as exc:
+            current.plan.mark_step_status(step.id, StepStatus.BLOCKED)
+            current.metadata.setdefault("researcher_errors", []).append(str(exc))
+            current.metadata.setdefault("researcher_status", "blocked")
+            return current.model_dump()
+
+        _apply_research_results(current, step, result)
+        current.plan.mark_step_status(step.id, StepStatus.COMPLETED)
+        current.metadata.setdefault("researcher_status", "completed_step")
+        current.metadata.setdefault("researcher_history", []).append(
+            {
+                "step_id": step.id,
+                "query": result.query,
+                "note_count": len(result.notes),
+            }
+        )
+        current.metadata["researcher_last_query"] = result.query
+        current.metadata["last_researcher_step"] = step.id
+
+        return current.model_dump()
+
     def _reporter(state: GraphState | Dict[str, Any]) -> Dict[str, Any]:
         current = _ensure_state(state)
         current.metadata.setdefault("reporter_placeholder", True)
@@ -101,6 +147,7 @@ def build_graph(
     graph.add_node("coordinator", _coordinator)
     graph.add_node("planner", _planner)
     graph.add_node("human_review", _human_review)
+    graph.add_node("researcher", _researcher)
     graph.add_node("reporter", _reporter)
 
     graph.add_edge(START, "coordinator")
@@ -110,11 +157,12 @@ def build_graph(
         "human_review",
         _review_transition,
         {
-            "accept": "reporter",
+            "accept": "researcher",
             "revise": "planner",
             "abort": END,
         },
     )
+    graph.add_edge("researcher", "reporter")
     graph.add_edge("reporter", END)
 
     return graph.compile()
@@ -155,3 +203,34 @@ def _merge_context(existing: str, feedback: str) -> str:
 
 def _utc_timestamp() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+def _select_next_step(plan: Plan, current_step_id: str | None) -> PlanStep | None:
+    if current_step_id:
+        try:
+            current = plan.get_step(current_step_id)
+            if current.status != StepStatus.COMPLETED:
+                return current
+        except KeyError:
+            pass
+
+    for candidate in plan.steps:
+        if candidate.status != StepStatus.COMPLETED:
+            return candidate
+
+    return None
+
+
+def _apply_research_results(
+    state: GraphState, step: PlanStep, result: ResearcherResult
+) -> None:
+    if state.plan is None:
+        return
+
+    notes = result.notes
+    references = result.references
+
+    for idx, note in enumerate(notes):
+        reference = references[idx] if idx < len(references) else None
+        state.plan.append_note(step.id, note, reference=reference)
+        state.add_scratchpad_note(note)

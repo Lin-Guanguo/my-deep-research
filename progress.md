@@ -30,12 +30,13 @@
 - 梳理 Planner 审阅日志持久化与工具脚本的实现，确认 CLI 测试覆盖与示例输出结构。
 - 将审阅日志校验脚本纳入 pytest 回归测试，保持示例 JSONL 与工具脚本长期有效。
 - 新增 Researcher 节点接口大纲，为 Stage 2 定义输入输出与开放问题。
+- 实现最小 Researcher 节点原型，串联 Tavily 查询→ResearchNote→scratchpad，完成 LangGraph Stage 1 端到端闭环。
 
 ## 主题与目标
 - 当前示例练习：LangGraph 深度调研代理最佳实践（可替换为其他问题）。
 - 长期目标：构建可复用的 Deep Research 工具链，支持多种调研场景的闭环执行。
 
 ## 下一步
-- 原型实现最小 Researcher 节点（Tavily 检索→写入 ResearchNote），验证 LangGraph 串联。
+- 扩展 ResearcherAgent 多结果整合与置信度评分策略，与 Reporter 输出格式保持一致。
 - 与 Reporter 模板对齐 ResearchNote 字段，明确证据与置信度的同步方式。
 - 评估 PlanRunRecord 是否需要补充调用耗时/成本字段，并设计记录方案。

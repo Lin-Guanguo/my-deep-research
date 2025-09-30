@@ -28,7 +28,11 @@
 3. `ResearchNote` 中的 `source` 字段是否强制要求 URL？如何记录付费 API 的引用？
 4. 需要哪些遥测数据（调用时长、Token 耗费）写入 `PlanRunRecord` 或独立日志？
 
+## Current Prototype
+- `ResearcherAgent.run_step` 根据 Plan 步骤构造 Tavily 查询，默认取首条有效结果生成 `ResearchNote`。
+- LangGraph `researcher` 节点会更新步骤状态、写入 `scratchpad`，并记录查询元数据供 Reporter/审计复用。
+
 ## Next Steps
 - 定义 `ResearchContext` 数据类，封装 locale、预算、工具配置，降低函数签名复杂度。
-- Prototype 一个最小可行的 `researcher_node`，仅调用 Tavily 并写入单条 `ResearchNote`，用于串联 LangGraph。
+- 扩展 Tavily 结果整合策略（多条笔记、去重及置信度评分），与 Reporter 输出格式对齐。
 - 与 Reporter 节点的模板对齐，确认需要的 note 字段（证据、摘要、置信度等）。

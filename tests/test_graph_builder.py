@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import unittest
 
+from src.agents.researcher import ResearcherResult
 from src.config.configuration import AppConfig
 from src.graph.builder import build_graph, initial_state
-from src.models.plan import Plan
+from src.models.plan import Plan, ResearchNote, StepStatus
 
 
 class DummyPlanner:
@@ -17,6 +18,24 @@ class DummyPlanner:
     def generate_plan(self, topic: str, *, locale: str, context: str | None = None, extra_meta=None) -> Plan:
         self.calls.append((topic, locale, context))
         return self.plan
+
+
+class DummyResearcher:
+    def __init__(self) -> None:
+        self.calls: list[tuple[str, str, str]] = []
+
+    def run_step(self, *, topic: str, step, locale: str) -> ResearcherResult:  # noqa: ANN001
+        self.calls.append((topic, step.id, locale))
+        note = ResearchNote(
+            source="https://example.com",
+            claim=f"Insight for {step.title}",
+            evidence=None,
+        )
+        return ResearcherResult(
+            query=f"{topic} | {step.title}",
+            notes=[note],
+            references=[note.source],
+        )
 
 
 class GraphBuilderTests(unittest.TestCase):
@@ -41,7 +60,14 @@ class GraphBuilderTests(unittest.TestCase):
         def handler(state):
             return "ACCEPT_PLAN", ""
 
-        graph = build_graph(cfg, planner_agent=dummy_planner, review_handler=handler)
+        dummy_researcher = DummyResearcher()
+
+        graph = build_graph(
+            cfg,
+            planner_agent=dummy_planner,
+            review_handler=handler,
+            researcher_agent=dummy_researcher,
+        )
 
         state = initial_state("Test Topic", locale="en-US", metadata={"context": "ctx"})
         result = graph.invoke(state.model_dump())
@@ -50,6 +76,11 @@ class GraphBuilderTests(unittest.TestCase):
         self.assertEqual(result["plan"]["topic"], "Test")
         self.assertEqual(result["metadata"]["last_review_action"], "ACCEPT_PLAN")
         self.assertEqual(dummy_planner.calls, [("Test Topic", "en-US", "ctx")])
+        self.assertEqual(dummy_researcher.calls, [("Test Topic", "step-1", "en-US")])
+        self.assertEqual(
+            result["plan"]["steps"][0]["status"],
+            StepStatus.COMPLETED.value,
+        )
 
     def test_request_changes_loops_back_to_planner(self) -> None:
         cfg = AppConfig()
@@ -99,7 +130,14 @@ class GraphBuilderTests(unittest.TestCase):
                 return "REQUEST_CHANGES", "Add more detail"
             return "ACCEPT_PLAN", ""
 
-        graph = build_graph(cfg, planner_agent=dummy_planner, review_handler=handler)
+        dummy_researcher = DummyResearcher()
+
+        graph = build_graph(
+            cfg,
+            planner_agent=dummy_planner,
+            review_handler=handler,
+            researcher_agent=dummy_researcher,
+        )
 
         state = initial_state("Topic", locale="en-US", metadata={"context": "ctx"})
         result = graph.invoke(state.model_dump())
@@ -107,6 +145,7 @@ class GraphBuilderTests(unittest.TestCase):
         self.assertEqual(dummy_planner.calls, [("Topic", "en-US", "ctx"), ("Topic", "en-US", "ctx\nReviewer feedback: Add more detail")])
         self.assertEqual(result["plan"]["topic"], "Second")
         self.assertEqual(result["metadata"].get("last_review_action"), "ACCEPT_PLAN")
+        self.assertEqual(dummy_researcher.calls[0][0], "Topic")
 
 
 if __name__ == "__main__":

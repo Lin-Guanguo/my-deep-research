@@ -44,7 +44,13 @@ class CliTests(unittest.TestCase):
 
         captured_handler = {}
 
-        def fake_build_graph(cfg, *, planner_agent=None, review_handler=None):
+        def fake_build_graph(
+            cfg,
+            *,
+            planner_agent=None,
+            review_handler=None,
+            researcher_agent=None,
+        ):
             captured_handler["handler"] = review_handler
 
             class Stub:
