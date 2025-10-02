@@ -12,6 +12,7 @@
 - `GraphState.current_step_id`: 当前处理的步骤标识，缺失时回退到首个未完成步骤。
 - `GraphState.metadata`: 包含预算、速率限制、review 信息；可选地携带上一节点的上下文。
 - 工具凭证：来自 `config/settings.yaml` 与 `secret` 中的 OpenRouter / Tavily 等配置。
+- `ResearchContext`：阶段性扩展字段包含 `max_notes`、预算余量、degradation 提示等，可与 LangGraph metadata 同步。
 
 ## Outputs
 - 更新目标步骤的 `PlanStep.status`（`IN_PROGRESS` → `COMPLETE` 等）和 `PlanStep.notes` 列表。
@@ -30,7 +31,7 @@
 
 ## Current Prototype
 - `ResearchContext` 聚合 topic/locale/步骤与 Tavily 配额，`ResearcherAgent.run_step` 直接消费该上下文并生成多条带置信度的 `ResearchNote`。
-- LangGraph `researcher` 节点会更新步骤状态、写入 `scratchpad`，并记录查询耗时、笔记数等遥测数据供 Reporter/审计复用。
+- LangGraph `researcher` 节点会更新步骤状态、写入 `scratchpad`，并记录查询耗时、笔记数、结果数量等遥测数据供 Reporter/审计复用。
 
 ## Next Steps
 - 拓展 `ResearchContext` 支持工具降级策略、预算余量等参数，并与 LangGraph metadata 同步。

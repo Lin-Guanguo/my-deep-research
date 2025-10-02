@@ -38,6 +38,9 @@ class ResearchContext:
     max_notes: int | None = None
     scratchpad: Sequence[ResearchNote] = ()
     prior_notes: Sequence[ResearchNote] = ()
+    budget_tokens_remaining: int | None = None
+    budget_cost_limit: float | None = None
+    degradation_hint: str | None = None
 
 
 class ResearcherAgent:

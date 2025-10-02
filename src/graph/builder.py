@@ -18,6 +18,7 @@ from src.config.configuration import AppConfig
 
 from .state import GraphState
 from src.models.plan import Plan, PlanStep, ResearchNote, StepStatus
+from src.report.markdown import render_report
 
 # Ordered tuple describing the canonical node pipeline of the research agent.
 STANDARD_NODES: Tuple[str, ...] = (
@@ -117,12 +118,18 @@ def build_graph(
         current.current_step_id = step.id
         current.plan.mark_step_status(step.id, StepStatus.IN_PROGRESS)
 
+        plan_metadata = current.plan.metadata if current.plan else None
+        budget_tokens = getattr(plan_metadata, "budget_tokens", None) if plan_metadata else None
+        budget_cost = getattr(plan_metadata, "budget_cost_usd", None) if plan_metadata else None
         context = ResearchContext(
             topic=current.topic,
             locale=current.locale or configuration.runtime.locale,
             step=step,
             max_results=configuration.search.max_queries,
             timeout_seconds=configuration.search.timeout_seconds,
+            budget_tokens_remaining=budget_tokens,
+            budget_cost_limit=budget_cost,
+            degradation_hint=current.metadata.get("researcher_degradation"),
         )
 
         try:
@@ -153,7 +160,14 @@ def build_graph(
     def _reporter(state: GraphState | Dict[str, Any]) -> Dict[str, Any]:
         current = _ensure_state(state)
         current.metadata.setdefault("reporter_placeholder", True)
-        current.metadata["reporter_summary"] = _build_reporter_summary(current)
+        summary = _build_reporter_summary(current)
+        current.metadata["reporter_summary"] = summary
+        if current.plan is not None:
+            current.metadata["report_markdown"] = render_report(
+                current.plan,
+                summary=summary,
+                locale=current.locale or configuration.runtime.locale,
+            )
         return current.model_dump()
 
     graph.add_node("coordinator", _coordinator)

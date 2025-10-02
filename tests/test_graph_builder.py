@@ -97,6 +97,9 @@ class GraphBuilderTests(unittest.TestCase):
         summary = result["metadata"].get("reporter_summary")
         self.assertIsNotNone(summary)
         self.assertEqual(summary["total_notes"], 1)
+        markdown = result["metadata"].get("report_markdown")
+        assert markdown is not None
+        assert "# Research Report" in markdown
 
     def test_request_changes_loops_back_to_planner(self) -> None:
         cfg = AppConfig()
@@ -166,6 +169,8 @@ class GraphBuilderTests(unittest.TestCase):
         self.assertEqual(metrics["total_calls"], 1)
         summary = result["metadata"].get("reporter_summary")
         self.assertEqual(summary["total_notes"], 1)
+        markdown = result["metadata"].get("report_markdown")
+        assert markdown is not None
 
 
 if __name__ == "__main__":
