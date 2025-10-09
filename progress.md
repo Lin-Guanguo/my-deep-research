@@ -40,6 +40,11 @@
 - 长期目标：构建可复用的 Deep Research 工具链，支持多种调研场景的闭环执行。
 
 ## 下一步
+- 优先完成可复现 demo：使用 `uv run scripts/run_cli.py -q "..." --auto-accept` 生成计划并保存 `output/plans/plans.jsonl`。
+- 梳理一次人工审阅流程示范（可去掉 `--auto-accept`），记录关键步骤供演示使用。
+- 汇总 demo 依赖与运行要点，更新到相关文档或 README 草稿便于复现。
+
+## 待办（后续阶段）
 - 将 ResearchContext 扩展字段接入工具降级/预算策略，驱动 Researcher 调用决策。
 - 迭代 Reporter Markdown（引用编号、风险表格）并对接 validation 结果。
 - 规划 Planner/Researcher LLM 调用成本记录方案，补全 PlanRunRecord 遥测字段。
