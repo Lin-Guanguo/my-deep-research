@@ -34,15 +34,16 @@
 - 扩展 ResearcherAgent 支持多结果聚合与置信度估计，并将耗时/笔记统计写入计划遥测。
 - 引入 ResearchContext 抽象、Reporter 摘要与研究遥测整合，完成 Stage 1 全链路观测，并刷新文档/示例。
 - 实现 Markdown Reporter 最小渲染，输出步骤笔记与遥测摘要。
+- 建立 `pyproject.toml` + `uv.lock`，完成依赖声明与 `uv sync` 验证。
+- 新增 `docs/demo-quickstart.md`，整理快速跑通 CLI demo 的操作清单。
 
 ## 主题与目标
 - 当前示例练习：LangGraph 深度调研代理最佳实践（可替换为其他问题）。
 - 长期目标：构建可复用的 Deep Research 工具链，支持多种调研场景的闭环执行。
 
 ## 下一步
-- 优先完成可复现 demo：使用 `uv run scripts/run_cli.py -q "..." --auto-accept` 生成计划并保存 `output/plans/plans.jsonl`。
-- 梳理一次人工审阅流程示范（可去掉 `--auto-accept`），记录关键步骤供演示使用。
-- 汇总 demo 依赖与运行要点，更新到相关文档或 README 草稿便于复现。
+- 按 quickstart 指南跑一轮示范问题，沉淀终端交互要点供复盘分享。
+- 视需要截取审阅流程操作亮点，准备 demo 演示脚本或讲解稿。
 
 ## 待办（后续阶段）
 - 将 ResearchContext 扩展字段接入工具降级/预算策略，驱动 Researcher 调用决策。

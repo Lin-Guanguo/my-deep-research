@@ -9,6 +9,10 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+if str(PROJECT_ROOT) not in sys.path:
+    sys.path.insert(0, str(PROJECT_ROOT))
+
 from pydantic import ValidationError
 
 from src.agents.planner import PlannerAgent
@@ -25,7 +29,6 @@ from src.models.persistence import (
     RunTelemetry,
 )
 
-PROJECT_ROOT = Path(__file__).resolve().parents[1]
 PLANS_DIR = PROJECT_ROOT / "output" / "plans"
 
 
@@ -249,6 +252,9 @@ def _coerce_metrics(payload: Dict[str, Any]) -> ResearcherMetrics:
                 result_count = int(result_count)
             except (TypeError, ValueError):
                 result_count = None
+        applied_max_results = call.get("applied_max_results")
+        applied_max_notes = call.get("applied_max_notes")
+        degradation_mode = call.get("degradation_mode")
         coerced_calls.append(
             ResearcherCallLog(
                 step_id=step_id,
@@ -256,6 +262,9 @@ def _coerce_metrics(payload: Dict[str, Any]) -> ResearcherMetrics:
                 note_count=note_count,
                 duration_seconds=duration,
                 result_count=result_count,
+                applied_max_results=_safe_int(applied_max_results),
+                applied_max_notes=_safe_int(applied_max_notes),
+                degradation_mode=str(degradation_mode).strip() if degradation_mode else None,
             )
         )
 
@@ -275,12 +284,25 @@ def _coerce_metrics(payload: Dict[str, Any]) -> ResearcherMetrics:
         except (TypeError, ValueError):
             total_results = None
 
+    degradation_modes = payload.get("degradation_modes") or []
+    normalized_modes = [str(mode).strip() for mode in degradation_modes if str(mode).strip()]
+
     return ResearcherMetrics(
         total_calls=total_calls,
         total_notes=total_notes,
         total_duration_seconds=total_duration,
         total_results=total_results,
+        degradation_modes=normalized_modes,
         calls=coerced_calls,
     )
+
+
+def _safe_int(value: Any) -> int | None:
+    if value is None:
+        return None
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
 if __name__ == "__main__":
     main()
