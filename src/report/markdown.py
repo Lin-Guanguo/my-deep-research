@@ -38,6 +38,15 @@ def render_report(
             )
             lines.append(formatted)
 
+    citations = _collect_citations(plan.steps)
+    if citations:
+        lines.append("")
+        lines.append("## Citations")
+        lines.append("| # | Source |")
+        lines.append("| --- | --- |")
+        for index, source in citations:
+            lines.append(f"| {index} | {source} |")
+
     return "\n".join(lines).rstrip() + "\n"
 
 
@@ -116,3 +125,18 @@ def _render_note(note: ResearchNote) -> list[str]:
     if note.todo:
         parts.append(f"  - Follow-up: {note.todo}")
     return parts
+
+
+def _collect_citations(steps: Sequence[PlanStep]) -> list[tuple[int, str]]:
+    seen: dict[str, int] = {}
+    ordered: list[tuple[int, str]] = []
+    counter = 1
+    for step in steps:
+        for note in step.notes:
+            source = note.source.strip() if note.source else ""
+            if not source or source in seen:
+                continue
+            seen[source] = counter
+            ordered.append((counter, source))
+            counter += 1
+    return ordered

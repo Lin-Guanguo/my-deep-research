@@ -24,6 +24,9 @@ class ResearcherResult:
     references: List[str]
     duration_seconds: float | None = None
     total_results: int = 0
+    applied_max_results: int | None = None
+    applied_max_notes: int | None = None
+    degradation_mode: str | None = None
 
 
 @dataclass
@@ -65,6 +68,21 @@ class ResearcherAgent:
         max_results = max(1, context.max_results)
         timeout = max(1.0, float(context.timeout_seconds))
 
+        effective_max_results = max_results
+        effective_max_notes = context.max_notes or min(3, max_results)
+        degradation_mode = _resolve_degradation_mode(context)
+
+        if degradation_mode:
+            if "budget" in degradation_mode:
+                effective_max_results = min(effective_max_results, 2)
+                effective_max_notes = min(effective_max_notes, 1)
+            if "conservative" in degradation_mode:
+                effective_max_results = min(effective_max_results, 2)
+                effective_max_notes = min(effective_max_notes, 1)
+            if "aggressive" in degradation_mode:
+                effective_max_results = max(1, effective_max_results // 2)
+                effective_max_notes = max(1, effective_max_notes // 2)
+
         query = self._build_query(
             topic=context.topic,
             step=context.step,
@@ -79,8 +97,11 @@ class ResearcherAgent:
             raise ResearcherError(str(exc)) from exc
         duration = perf_counter() - started_at
 
-        max_notes = context.max_notes or min(3, max_results)
-        notes, references = self._extract_notes(context.step, results, max_notes=max_notes)
+        notes, references = self._extract_notes(
+            context.step,
+            results,
+            max_notes=effective_max_notes,
+        )
         if not notes:
             raise ResearcherError("Tavily returned no usable results for this step")
 
@@ -90,6 +111,9 @@ class ResearcherAgent:
             references=references,
             duration_seconds=duration,
             total_results=len(results),
+            applied_max_results=effective_max_results,
+            applied_max_notes=effective_max_notes,
+            degradation_mode=degradation_mode,
         )
 
     def _build_query(self, *, topic: str, step: PlanStep, locale: str) -> str:
@@ -170,3 +194,24 @@ def _default_search_callable(
         max_results=max_results,
         timeout=timeout,
     )
+
+
+def _resolve_degradation_mode(context: ResearchContext) -> str | None:
+    modes: list[str] = []
+    if context.degradation_hint:
+        modes.append(context.degradation_hint)
+    if context.budget_tokens_remaining is not None and context.budget_tokens_remaining < 500:
+        modes.append("budget")
+    if context.budget_cost_limit is not None and context.budget_cost_limit < 1.0:
+        if "budget" not in modes:
+            modes.append("budget")
+    if not modes:
+        return None
+    # Deduplicate while preserving order
+    seen: set[str] = set()
+    ordered: list[str] = []
+    for mode in modes:
+        if mode not in seen:
+            seen.add(mode)
+            ordered.append(mode)
+    return ",".join(ordered)

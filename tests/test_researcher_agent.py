@@ -69,6 +69,9 @@ class ResearcherAgentTests(unittest.TestCase):
         self.assertIsNotNone(result.duration_seconds)
         self.assertGreaterEqual(result.total_results, 1)
         self.assertGreaterEqual(result.notes[0].confidence or 0.0, 0.6)
+        self.assertEqual(result.applied_max_results, agent._config.search.max_queries)
+        self.assertEqual(result.applied_max_notes, min(3, agent._config.search.max_queries))
+        self.assertIsNone(result.degradation_mode)
 
     def test_missing_api_key_raises(self) -> None:
         config = self._make_config(tavily_key=None)
@@ -149,6 +152,7 @@ class ResearcherAgentTests(unittest.TestCase):
         self.assertLessEqual(len(result.notes), 3)
         self.assertEqual(len(result.notes), len(result.references))
         self.assertTrue(all(note.confidence and note.confidence >= 0.6 for note in result.notes))
+        self.assertIsNone(result.degradation_mode)
 
     def test_max_notes_override_limits_output(self) -> None:
         config = self._make_config(tavily_key="tvly")
@@ -183,6 +187,48 @@ class ResearcherAgentTests(unittest.TestCase):
 
         result = agent.run_step(context)
         self.assertEqual(len(result.notes), 2)
+        self.assertEqual(result.applied_max_notes, 2)
+
+    def test_budget_degradation_applies_limits(self) -> None:
+        config = self._make_config(tavily_key="tvly")
+
+        def fake_search(*args, **kwargs):
+            return [
+                {
+                    "title": f"Data point {idx}",
+                    "url": f"https://example.com/data-{idx}",
+                    "snippet": "Excerpt",
+                }
+                for idx in range(4)
+            ]
+
+        agent = ResearcherAgent(config, search_callable=fake_search)
+
+        step = PlanStep(
+            id="step-4",
+            title="Budgeted lookup",
+            step_type="RESEARCH",
+            expected_outcome="Collect minimal evidence",
+        )
+
+        context = ResearchContext(
+            topic="LangGraph",
+            locale="en-US",
+            step=step,
+            max_results=4,
+            timeout_seconds=agent._config.search.timeout_seconds,
+            budget_tokens_remaining=200,
+            budget_cost_limit=0.5,
+            degradation_hint="conservative",
+        )
+
+        result = agent.run_step(context)
+
+        self.assertLessEqual(result.applied_max_results, 2)
+        self.assertLessEqual(result.applied_max_notes, 1)
+        self.assertIn("budget", result.degradation_mode or "")
+        self.assertIn("conservative", result.degradation_mode or "")
+        self.assertGreaterEqual(len(result.notes), 1)
 
 
 if __name__ == "__main__":

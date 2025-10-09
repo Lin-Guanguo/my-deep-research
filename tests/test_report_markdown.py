@@ -70,6 +70,8 @@ def test_render_report_includes_sections() -> None:
     assert "### Step 1: Collect references" in markdown
     assert "LangGraph enables declarative graphs" in markdown
     assert "No notes captured" in markdown
+    assert "## Citations" in markdown
+    assert "https://example.com/doc" in markdown
 
 
 def test_render_report_low_confidence_section() -> None:

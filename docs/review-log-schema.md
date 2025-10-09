@@ -65,9 +65,10 @@
       "total_notes": 3,
       "total_duration_seconds": 1.25,
       "total_results": 5,
+      "degradation_modes": ["budget"],
       "calls": [
-        {"step_id": "step-1", "query": "LangGraph 深度调研代理最佳实践 | 梳理官方文档 | zh-CN", "note_count": 2, "duration_seconds": 0.72, "result_count": 3},
-        {"step_id": "step-2", "query": "LangGraph 深度调研代理最佳实践 | 整理社区范例 | zh-CN", "note_count": 1, "duration_seconds": 0.53, "result_count": 2}
+        {"step_id": "step-1", "query": "LangGraph 深度调研代理最佳实践 | 梳理官方文档 | zh-CN", "note_count": 2, "duration_seconds": 0.72, "result_count": 3, "applied_max_results": 3, "applied_max_notes": 2, "degradation_mode": null},
+        {"step_id": "step-2", "query": "LangGraph 深度调研代理最佳实践 | 整理社区范例 | zh-CN", "note_count": 1, "duration_seconds": 0.53, "result_count": 2, "applied_max_results": 2, "applied_max_notes": 1, "degradation_mode": "budget"}
       ]
     }
   }

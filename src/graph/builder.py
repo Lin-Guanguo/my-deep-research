@@ -333,7 +333,15 @@ def _update_researcher_metrics(
             "note_count": len(result.notes),
             "duration_seconds": duration,
             "result_count": result_count,
+            "applied_max_results": result.applied_max_results,
+            "applied_max_notes": result.applied_max_notes,
+            "degradation_mode": result.degradation_mode,
         }
     )
+
+    if result.degradation_mode:
+        modes = metrics.setdefault("degradation_modes", [])
+        if result.degradation_mode not in modes:
+            modes.append(result.degradation_mode)
 
     state.metadata["researcher_metrics"] = metrics

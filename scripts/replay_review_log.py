@@ -92,6 +92,7 @@ def replay_log(
                 "total_notes": metrics.total_notes,
                 "total_duration_seconds": metrics.total_duration_seconds,
                 "total_results": metrics.total_results,
+                "degradation_modes": metrics.degradation_modes,
                 "calls": [
                     {
                         "step_id": call.step_id,
@@ -99,6 +100,9 @@ def replay_log(
                         "note_count": call.note_count,
                         "duration_seconds": call.duration_seconds,
                         "result_count": call.result_count,
+                        "applied_max_results": call.applied_max_results,
+                        "applied_max_notes": call.applied_max_notes,
+                        "degradation_mode": call.degradation_mode,
                     }
                     for call in metrics.calls
                 ],

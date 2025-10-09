@@ -40,6 +40,9 @@ class DummyResearcher:
             references=[note.source],
             duration_seconds=0.25,
             total_results=1,
+            applied_max_results=context.max_results,
+            applied_max_notes=context.max_notes or min(3, context.max_results),
+            degradation_mode=context.degradation_hint,
         )
 
 

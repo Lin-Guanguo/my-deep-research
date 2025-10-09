@@ -46,6 +46,15 @@ class ResearcherCallLog(BaseModel):
     result_count: Optional[int] = Field(
         default=None, ge=0, description="Total Tavily results returned for the query"
     )
+    applied_max_results: Optional[int] = Field(
+        default=None, ge=1, description="Effective Tavily max_results after degradation"
+    )
+    applied_max_notes: Optional[int] = Field(
+        default=None, ge=1, description="Effective note extraction limit after degradation"
+    )
+    degradation_mode: Optional[str] = Field(
+        default=None, description="Applied degradation mode, comma-separated"
+    )
 
 
 class ResearcherMetrics(BaseModel):
@@ -58,6 +67,10 @@ class ResearcherMetrics(BaseModel):
     )
     total_results: Optional[int] = Field(
         default=None, ge=0, description="Total Tavily results retrieved across calls"
+    )
+    degradation_modes: List[str] = Field(
+        default_factory=list,
+        description="Distinct degradation modes applied during the run",
     )
     calls: List[ResearcherCallLog] = Field(
         default_factory=list, description="Per-step researcher execution logs"
